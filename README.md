@@ -31,3 +31,11 @@ export VCPKG_ROOT=/path/to/vcpkg
 export QT_ROOT=/path/to/Qt/6.8.3/gcc_64
 cmake --preset debug && cmake --build --preset debug && ctest --preset debug
 ```
+
+## Presets 與品質檢查
+
+- `debug`、`release`、`asan` 三個 preset（`CMakePresets.json`）。
+- 警告：MSVC `/W4 /WX /permissive-`；GCC/Clang `-Wall -Wextra -Wpedantic -Werror`，只套用在本專案 target（`cmake/CompilerWarnings.cmake`）。
+- `asan`：Linux 為 ASan + UBSan；Windows 為 MSVC `/fsanitize=address`（已關閉 `/RTC*` 與增量連結，
+  執行階段 DLL `clang_rt.asan_*.dll` 會在建置後複製到執行檔旁，見 `cmake/Sanitizers.cmake`）。
+  `./scripts/dev.ps1 all asan`

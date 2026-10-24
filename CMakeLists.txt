@@ -26,5 +26,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Widgets)
 
 include(NexusQtDeploy)
+include(CompilerWarnings)
+include(Sanitizers)
 
 add_subdirectory(src/app)

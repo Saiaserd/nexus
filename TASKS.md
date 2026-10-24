@@ -45,7 +45,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → T-00
 
 ### T-002 CMakePresets 與嚴格編譯警告
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-001
 - **目標**：建立 `debug`、`release`、`asan` 三個 preset，並統一開啟嚴格警告
 - **檔案**：
@@ -58,7 +58,13 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → T-00
   - `asan` preset：Linux 開 ASan + UBSan；Windows MSVC 開 `/fsanitize=address`（注意：MSVC ASan 需關閉 `/RTC*` 與增量連結，執行時需找得到 `clang_rt.asan_dynamic-x86_64.dll`）
   - 警告設定只套用在本專案目標，不影響第三方函式庫與 Qt 標頭（Qt 以 SYSTEM include 引入）
   - 三個 preset 在兩平台皆可建置
-- **備註**：
+- **備註**：（A）已完成，Windows 本機驗證通過；`debug`、`release`、`asan` 三個 preset 皆 configure + build + test 成功（目前尚無測試，ctest 回報 "No tests were found"，T-004 才會有）。
+  - **/WX 驗證**：故意加入 `int unusedVar = 42;`，debug 建置出現 `C4189` + `C2220`（警告視為錯誤）並失敗；已還原、未 commit。
+  - **ASan 驗證**：故意在 main 寫 `new int[4]` 越界，asan 版執行得到 `AddressSanitizer: heap-buffer-overflow` 並以 exit 1 結束；已還原、未 commit。確認 asan 編譯旗標含 `/fsanitize=address` 且不含 `/RTC1`，連結旗標含 `/INCREMENTAL:NO`。
+  - **警告範圍**：`nexus_set_warnings(target)` 以 PRIVATE 套用，不影響 vcpkg 套件；Qt 標頭為 IMPORTED target 的 SYSTEM include（實測編譯列為 `-external:I...`），MSVC 額外加 `/external:W0`。`nexus_enable_sanitizers(target)` 同樣需對每個 target 呼叫（T-004 的 core library、測試執行檔也要呼叫這兩個函式，以及測試執行檔要呼叫 `nexus_deploy_qt`）。
+  - **MSVC ASan 執行階段**：Debug（/MDd）實際匯入的是 `clang_rt.asan_dynamic-x86_64.dll`（非 `_dbg_`）；Sanitizers.cmake 會把兩個 DLL（`asan_dynamic`、`asan_dbg_dynamic`）從 cl.exe 所在目錄複製到可執行檔旁，因此不依賴 PATH。
+  - **Preset 變更**：`VCPKG_INSTALLED_DIR` 設為 `build/vcpkg_installed`，三個 preset 共用同一份 vcpkg 安裝，避免重複建置相依；binaryDir 為 `build/<preset>`。asan 的 test preset 設 `UBSAN_OPTIONS`（僅 Linux 有效；Windows 無 UBSan）。
+  - **風險／未驗證**：(1) **Linux 尚未驗證、等 T-005 CI**：GCC/Clang 旗標、`-fsanitize=address,undefined`、`-fno-sanitize-recover=all`、Linux 下 Qt 的 SYSTEM include 皆未實測。(2) MSVC 混用「有 ASan」與「無 ASan」的靜態函式庫（vcpkg 的 gtest 等）可能在 T-004 遇到 `annotate_vector` 的 LNK2038 不一致或 ODR 類問題，屆時視情況處理。(3) Windows 上未啟用 LeakSanitizer（MSVC 不支援）。
 
 ---
 
