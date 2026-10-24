@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "nexus",
+  "version-string": "0.1.0",
+  "builtin-baseline": "c82f74667287d3dc386bce81e44964370c91a289",
+  "dependencies": [
+    {
+      "name": "sqlite3",
+      "features": ["fts5"]
+    },
+    "md4c",
+    "tree-sitter",
+    "gtest",
+    "tl-expected"
+  ]
+}
