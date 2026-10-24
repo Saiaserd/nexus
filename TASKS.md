@@ -7,15 +7,15 @@
 
 ## 目前 Milestone：M0 專案骨架
 
-M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → T-004 → T-006 → T-003 → T-005。
+M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-007** → T-004 → T-006 → T-003 → T-005。
 
-開工前必讀：`docs/decisions/0001`（Qt 不走 vcpkg、Windows 工具鏈）、`0002`（`nexus::Expected`）。
+開工前必讀：`docs/decisions/0001`（Qt 不走 vcpkg、Windows 工具鏈）、`0002`（`nexus::Expected`）、`0003`（獨立 vcpkg）。
 
 ---
 
 ### T-001 建立 CMake + vcpkg + Qt 6 基本專案
 - **負責**：A
-- **狀態**：待審核
+- **狀態**：已完成
 - **依賴**：無
 - **目標**：可在 Windows 與 Linux 建置一個連結 Qt 6 的空執行檔
 - **檔案**：
@@ -45,7 +45,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → T-00
 
 ### T-002 CMakePresets 與嚴格編譯警告
 - **負責**：A
-- **狀態**：待審核
+- **狀態**：已完成
 - **依賴**：T-001
 - **目標**：建立 `debug`、`release`、`asan` 三個 preset，並統一開啟嚴格警告
 - **檔案**：
@@ -133,6 +133,25 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → T-00
   - 關閉視窗正常結束，asan 無錯誤或洩漏回報
   - 只做系統原生外觀的空殼；**不做任何主題或自訂樣式**（UI 設計稿確認前不得加，見 CLAUDE.md「UI」）
 - **備註**：
+
+---
+
+### T-007 改用獨立 vcpkg，移除自行下載 pkgconf
+- **負責**：A
+- **狀態**：待辦
+- **依賴**：T-002
+- **目標**：依 ADR 0003，以釘死版本的獨立 vcpkg 取代 VS 內建 vcpkg
+- **檔案**：
+  - `scripts/dev.ps1`（clone、checkout、bootstrap vcpkg；刪除 `Ensure-PkgConfig`）
+  - `vcpkg.json`（`builtin-baseline` 改成近期穩定 release tag 的 commit，於備註寫明 tag 名稱）
+  - `README.md`（更新建置說明）
+- **完成標準**：
+  - 刪掉 `%LOCALAPPDATA%
+exus` 與 `build/` 後，在乾淨的 PowerShell 執行 `./scripts/dev.ps1 all debug` 一次成功
+  - 腳本裡不再有任何沒驗證雜湊的二進位下載
+  - `debug`、`release`、`asan` 三個 preset 都建置成功
+  - 備註列出升級後各套件的實際版本（尤其 tree-sitter）
+- **備註**：（PM）審核 T-001 時提出，見 ADR 0003。
 
 ---
 
