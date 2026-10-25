@@ -482,7 +482,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-105 小修：隱藏檔名
 - **負責**：A
-- **狀態**：待審核
+- **狀態**：已完成
 - **依賴**：T-102
 - **目標**：處理 T-102 審核時留下的事項
 - **檔案**：`src/core/NoteFiles.cpp`、`src/core/FileError.h`（若需要新的 NameError）、`tests/core/NoteFilesTest.cpp`
@@ -492,7 +492,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-301 關係圖力導向佈局（核心演算法）
 - **負責**：A
-- **狀態**：待審核
+- **狀態**：已完成
 - **依賴**：M0
 - **目標**：M3 圖譜視圖使用的佈局引擎，不依賴 Qt Widgets，可單元測試
 - **檔案**：`src/core/graph/ForceLayout.h/.cpp`、`src/core/graph/QuadTree.h/.cpp`（Barnes-Hut）、`tests/core/ForceLayoutTest.cpp`
