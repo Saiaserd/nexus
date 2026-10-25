@@ -528,7 +528,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-401 Claude Code CLI 橋接（M4 核心）
 - **負責**：C
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：M0
 - **目標**：用 `QProcess` 呼叫 Claude Code CLI 執行任務，把串流輸出解析成結構化事件（PLAN M4）
 - **檔案**：`src/ai/CMakeLists.txt`（新的 `nexus_ai`，只連 QtCore）、`src/ai/AgentRun.h/.cpp`（QObject）、`src/ai/StreamJsonParser.h/.cpp`（純函式，逐行解析）、`src/ai/AgentEvent.h`、`tests/ai/StreamJsonParserTest.cpp`、`tests/ai/AgentRunTest.cpp`、`tests/ai/fake_claude/`（測試用的假 CLI 執行檔，C++ 寫，依參數輸出預錄的 stream-json，並可模擬錯誤、卡住、非 0 結束）
@@ -545,6 +545,12 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
   - 根目錄 `CMakeLists.txt` 加入 `add_subdirectory(src/ai)`；`tests/CMakeLists.txt` 新增 `nexus_ai_tests` 與假 CLI 目標（只新增，不重排）
   - 備註記錄所參考的 stream-json 格式（事件種類與欄位），以及驗證的方式（若本機有安裝 claude，可以實際跑一次簡單的 prompt 對照；沒有的話就照官方文件）
 - **備註**：
+  - 實作：`nexus_ai`（QtCore only）。`StreamJsonParser`：`parseStreamJsonLine`（純函式，回傳 `Expected<ParsedLine, ParseError>`）+ `LineSplitter`（跨 chunk 組行、處理 CRLF、單行上限 64MB、線性掃描）。`AgentRun`：QProcess，非阻塞；`started`／`sessionInitialized`／`assistantText`／`toolUse`／`toolResult`／`finished(AgentResult)`／`failed(AgentError)`，終端訊號（finished 或 failed）只會發一次且在行程結束後。
+  - 策略：有 `result` 行就回報 `finished`（即使 CLI 以 1 結束；`success=false` 代表 CLI 自報錯誤，如 error_max_turns）；沒有 `result` 時：非 0 結束／崩潰 → `NonZeroExit`（附 stderr 尾端 16KB），結束碼 0 → `ParseError`；取消／逾時優先於其他結果。取消＝terminate，`killGraceMs`（預設 3000）後 kill。無法解析的行只計數（`unparsedLines()`），未知事件類型記在 `ignoredTypes()`，不中斷。
+  - 防護：JSON 巢狀深度 >128 直接拒絕（Qt 解析器在 debug 建置下遇到 10000 層巢狀會 segfault，已用測試重現後加防護）。
+  - 測試：`nexus_ai_tests`（解析器 28 個＋LineSplitter 7 個、AgentRun 20 個）；假 CLI 為 `fake_claude`（純 C++，--fake=replay|echo|exit|hang|big|bigline|garbage，另有 --fake-chunk／--fake-exit／--fake-ignore-term）。fixtures 在 `tests/ai/fixtures/`（兩份為真 CLI 輸出，已精簡）。
+  - stream-json 格式（Claude Code 2.1.310 實測，指令 `claude -p --output-format stream-json --verbose --max-turns 1`，prompt 由 stdin）：每行一個 JSON 物件，皆有 `type`。`rate_limit_event`（未知，略過）→ `system`/`init`（`session_id`、`model`、`tools`…）→ `assistant`（`message.content[]`：`thinking`／`text{text}`／`tool_use{id,name,input}`；同一則訊息的每個 block 各自一行）→ `user`（`message.content[]`：`tool_result{tool_use_id,content(字串或 text block 陣列),is_error}`）→ `result`（`subtype`：success／error_max_turns／error_during_execution…，`is_error`、`duration_ms`、`total_cost_usd`、`session_id`、`result` 字串或 `errors[]`、`num_turns`）。Windows 上輸出為 LF。實測兩次：「1+1」得到上述順序，`result.result="2"`；要求執行 `echo hi` 的 prompt（max-turns 1）得到 tool_use／tool_result 與 `error_max_turns`、行程結束碼 1（所以「有 result 但非 0 結束」要算 finished）。
+  - 未驗證：Windows 上 `QProcess::terminate()` 對無視窗的主控台行程無效，實際靠 kill 寬限期收尾；kill 只殺 CLI 本身，不殺其子行程（之後若 CLI 會長時間啟動子行程，需改用 Job Object）。
 
 ### T-501 程式碼符號擷取：tree-sitter C/C++（M5 核心）
 - **負責**：A

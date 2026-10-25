@@ -44,3 +44,25 @@ set_tests_properties(nexus_gui_smoke PROPERTIES TIMEOUT 60)
 if(NOT WIN32)
   set_tests_properties(nexus_gui_smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
+
+# AI layer (Claude Code CLI bridge). Tests run against a fake CLI, never the real claude.
+add_executable(fake_claude ai/fake_claude/main.cpp)
+nexus_set_warnings(fake_claude)
+nexus_enable_sanitizers(fake_claude)
+
+add_executable(nexus_ai_tests
+  ai/StreamJsonParserTest.cpp
+  ai/AgentRunTest.cpp
+  core/TestMain.cpp)
+
+target_link_libraries(nexus_ai_tests PRIVATE nexus_ai Qt6::Test GTest::gtest)
+target_compile_definitions(nexus_ai_tests PRIVATE
+  NEXUS_AI_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/ai/fixtures"
+  NEXUS_FAKE_CLAUDE_PATH="$<TARGET_FILE:fake_claude>")
+add_dependencies(nexus_ai_tests fake_claude)
+
+nexus_set_warnings(nexus_ai_tests)
+nexus_enable_sanitizers(nexus_ai_tests)
+nexus_deploy_qt(nexus_ai_tests)
+
+gtest_discover_tests(nexus_ai_tests)

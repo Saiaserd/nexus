@@ -1,0 +1,5 @@
+{"type":"system","subtype":"init","session_id":"s-future","model":"m"}
+{"type":"brand_new_event","payload":{"x":1}}
+{"type":"system","subtype":"future_thing"}
+{"type":"assistant","message":{"content":[{"type":"text","text":"hello","extra_field":1},{"type":"server_tool_use","id":"z"}],"new_field":true}}
+{"type":"result","subtype":"success","is_error":false,"duration_ms":1,"result":"ok","unknown":{"a":[1,2]}}
