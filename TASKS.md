@@ -536,3 +536,25 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
   - 根目錄 `CMakeLists.txt` 加入 `add_subdirectory(src/ai)`；`tests/CMakeLists.txt` 新增 `nexus_ai_tests` 與假 CLI 目標（只新增，不重排）
   - 備註記錄所參考的 stream-json 格式（事件種類與欄位），以及驗證的方式（若本機有安裝 claude，可以實際跑一次簡單的 prompt 對照；沒有的話就照官方文件）
 - **備註**：
+
+### T-501 程式碼符號擷取：tree-sitter C/C++（M5 核心）
+- **負責**：A
+- **狀態**：待辦
+- **依賴**：M0
+- **目標**：解析 C/C++ 原始檔，抽出符號，讓 M5 能把程式碼符號放進圖譜，並解析 `[[code:src/core/Vault.cpp#Vault::open]]` 這種連結
+- **檔案**：
+  - `vcpkg-overlays/ports/tree-sitter-cpp/`（overlay port，ADR 0007）；`vcpkg.json` 加入 `tree-sitter-c`、`tree-sitter-cpp` 與 `vcpkg-configuration.overlay-ports`
+  - `src/code/CMakeLists.txt`（新的 `nexus_code`，連結 tree-sitter 與兩個語法套件、QtCore）
+  - `src/code/CodeSymbol.h`：`{kind, name, qualifiedName, filePath(相對), startLine, endLine, signature}`；kind 包含 Namespace、Class、Struct、Union、Enum、Function、Method、Constructor、Destructor、Field、TypeAlias、Macro
+  - `src/code/SymbolExtractor.h/.cpp`：`extract(QStringView source, Language) -> std::vector<CodeSymbol>`，用 tree-sitter query（`.scm` 放在 qrc 或編進字串常數）
+  - `src/code/LanguageDetector.h/.cpp`：依副檔名判斷（`.c` `.h` → C；`.cpp` `.cc` `.cxx` `.hpp` `.hh` `.hxx` `.ipp` → C++；`.h` 預設當 C++，因為 C++ 的語法能解析大部分 C 標頭）
+  - `src/code/CodeLink.h/.cpp`：解析 `code:<path>#<qualifiedName>` 字串，並在符號表中找出對應的符號（找不到時回傳候選清單，例如名稱相同但命名空間不同的符號）
+  - `tests/code/SymbolExtractorTest.cpp`、`tests/code/CodeLinkTest.cpp`、`tests/code/fixtures/*.cpp|*.h`
+- **完成標準**：
+  - 正確取得巢狀命名空間與類別的完整限定名（`nexus::core::Vault::open`）；類別外定義的成員函式（`Vault::open` 寫在 .cpp 裡）也要能接回所屬類別
+  - 處理 template、operator 多載、匿名命名空間、`enum class`、建構與解構函式、宣告與定義並存（各自一筆，用 kind 或旗標區分宣告與定義）
+  - 語法錯誤的檔案不能崩潰，要盡量抽出能抽的部分（tree-sitter 有錯誤恢復）
+  - 拿 Nexus 自己的 `src/` 做整合測試：抽出的符號要包含 `nexus::core::Vault::open`、`nexus::core::NoteFiles::read`、`nexus::parser::lexLine`
+  - 效能（release）：解析 1 萬行 C++ < 100ms
+  - CI 三個平台都要通過（overlay port 在 Linux 上也要能建置）
+- **備註**：
