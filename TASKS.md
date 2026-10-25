@@ -299,3 +299,65 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 - **T-113 編輯器與分頁**：`QPlainTextEdit` + 行號 + 目前行底色 + 用 T-104 上色；分頁（未儲存圓點）、Ctrl+S、麵包屑、狀態列（行／欄、字數、換行種類）
 - **T-114 外部修改處理**：接上 VaultWatcher；沒有未儲存變更就自動重新載入並在狀態列提示；有未儲存變更就顯示衝突列；檔案被刪除時，分頁顯示刪除線
 - 詳細檔案清單與完成標準：設計稿確認後再補
+
+---
+---
+
+## 提前進行：M2 核心層（不含 UI）
+
+> 2026-10-25 PM 決定：M1 的 UI 在等設計稿確認，先做 M2 不需要 UI 的核心層，避免開發停下來（ADR 0005）。
+> 負責：**開發 B**。順序：T-201 → T-202。
+
+### T-201 筆記內容擷取：連結、標籤、標題、frontmatter
+- **負責**：B
+- **狀態**：待辦
+- **依賴**：T-104
+- **目標**：把一篇筆記的完整文字轉成索引需要的結構化資料
+- **檔案**：
+  - `src/parser/NoteParser.h/.cpp`：`ParsedNote parseNote(QStringView text)`
+  - `ParsedNote` 包含：
+    - `title`：第一個 H1；沒有的話留空，由呼叫端用檔名
+    - `headings`：`{level, text, line}`
+    - `wikiLinks`：`{target, heading, alias, line, column}`
+    - `mdLinks`：`[文字](相對路徑.md)`，只收 vault 內的相對路徑，網址不收
+    - `tags`：去重、保留原本大小寫，另提供小寫正規化的版本，並區分來源是內文還是 frontmatter
+    - `aliases`：來自 frontmatter
+    - `plainText`：給 FTS 用，去掉 Markdown 標記符號但保留文字
+  - `tests/parser/NoteParserTest.cpp`
+- **完成標準**：
+  - 連結和標籤一律透過 `MarkdownLexer` 取得（ADR 0005），程式碼區塊與行內程式碼內的不算
+  - frontmatter：只在檔案第一行是 `---` 時才算，到下一個 `---` 或 `...` 結束；支援 `tags: [a, b]`、`tags:` 加上 `- a` 清單、`tags: a`，`aliases` 同樣三種寫法；frontmatter 內容不出現在 headings、links 與 plainText
+  - 巢狀標籤 `#專案/nexus` 視為一個標籤，另提供展開成父標籤 `專案` 的函式（給之後的標籤樹用）
+  - line 和 column 從 0 開始；column 以 UTF-16 計算
+  - 效能：10,000 篇、每篇約 2KB 的筆記，release 下全部解析完 < 1 秒（單執行緒）
+  - 至少 30 個測試
+- **備註**：
+
+### T-202 SQLite 索引與全文搜尋（storage）
+- **負責**：B
+- **狀態**：待辦
+- **依賴**：T-201
+- **目標**：把 `ParsedNote` 存進 SQLite，提供反向連結、標籤查詢與 FTS5 全文搜尋
+- **檔案**：
+  - `src/storage/CMakeLists.txt`：新的 `nexus_storage` 函式庫，連結 vcpkg 的 `unofficial::sqlite3::sqlite3`（或該套件實際的 target）與 `Qt6::Core`
+  - `src/storage/SqliteHandle.h/.cpp`：RAII 包裝 `sqlite3*` 與 `sqlite3_stmt*`，錯誤回傳 `Expected`
+  - `src/storage/IndexDb.h/.cpp`：
+    - `open(path)`：自動建立或升級 schema，用 `PRAGMA user_version` 記版本
+    - `upsertNote(relPath, mtime, size, const ParsedNote&)`
+    - `removeNote(relPath)`、`renameNote(from, to)`
+    - `backlinks(relPath)`：回傳 `{sourcePath, line, column, context}`，context 是那一行的文字
+    - `outgoingLinks(relPath)`
+    - `notesWithTag(tag)`：可選擇是否包含子標籤
+    - `allTags()`：附各標籤的篇數
+    - `search(query, limit)`：FTS5，回傳 `{path, title, snippet}`
+    - `transaction()`：RAII，批次寫入用
+  - 連結目標解析（`[[x]]` 對應到哪一篇）：照 Obsidian 的規則。先找檔名（不含 `.md`、不分大小寫）完全相同的；有多篇同名時優先選路徑最短的；也可以寫相對路徑 `[[資料夾/x]]`；還可以比對 aliases。找不到的連結也要存（之後做「尚未建立的筆記」）。目標筆記新增或改名時，相關連結要重新解析
+  - `tests/storage/IndexDbTest.cpp`（用 `QTemporaryDir`）
+- **完成標準**：
+  - 資料庫在 `<vault>/.nexus/index.sqlite`（ADR 0005），開 WAL；`open` 遇到損毀的檔案時回傳錯誤，讓呼叫端決定是否刪掉重建
+  - schema 建表 SQL 集中在一個地方，有版本號；升級路徑要有測試，即使目前只有 v1
+  - FTS5 搜尋支援中文：用 `trigram` tokenizer（需要確認 vcpkg 的 sqlite3 版本支援），或另一個能處理中文的方案；在備註說明選擇與限制（例如 trigram 至少要 3 個字元）
+  - 效能（release）：10,000 篇筆記批次 upsert < 2 秒；`search` < 50ms；`backlinks` < 5ms
+  - SQL 一律使用參數綁定，不可以字串拼接（防 injection）
+  - 根目錄 `CMakeLists.txt` 加入 `add_subdirectory(src/storage)`；`tests/CMakeLists.txt` 新增 `nexus_storage_tests`（只新增，不重排）
+- **備註**：
