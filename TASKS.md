@@ -467,3 +467,67 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
   - SQL 一律使用參數綁定，不可以字串拼接（防 injection）
   - 根目錄 `CMakeLists.txt` 加入 `add_subdirectory(src/storage)`；`tests/CMakeLists.txt` 新增 `nexus_storage_tests`（只新增，不重排）
 - **備註**：
+
+---
+---
+
+## 提前進行：M3／M4 核心層與小修
+
+> 2026-10-25 PM：UI 只有一位開發者（D），是目前的瓶頸。核心層開發者繼續把後面 Milestone 中不需要 UI 的核心往前做。
+
+### T-105 小修：隱藏檔名
+- **負責**：A
+- **狀態**：待辦
+- **依賴**：T-102
+- **目標**：處理 T-102 審核時留下的事項
+- **檔案**：`src/core/NoteFiles.cpp`、`src/core/FileError.h`（若需要新的 NameError）、`tests/core/NoteFilesTest.cpp`
+- **完成標準**：
+  - `validateName` 拒絕以 `.` 開頭的名稱（新增 `NameError::Hidden` 或沿用合適的列舉），並附測試（ADR 0004 補充）
+- **備註**：
+
+### T-301 關係圖力導向佈局（核心演算法）
+- **負責**：A
+- **狀態**：待辦
+- **依賴**：M0
+- **目標**：M3 圖譜視圖使用的佈局引擎，不依賴 Qt Widgets，可單元測試
+- **檔案**：`src/core/graph/ForceLayout.h/.cpp`、`src/core/graph/QuadTree.h/.cpp`（Barnes-Hut）、`tests/core/ForceLayoutTest.cpp`
+- **設計**：
+  - 輸入：節點數 N、邊清單（索引對）；可以增量加減節點與邊，已存在的節點位置要保留
+  - 力：Barnes-Hut 斥力（θ 可調，預設 0.9）、邊的彈簧引力（理想長度可調）、往中心的弱引力（避免孤立節點飛走）、速度衰減
+  - 收斂：類似 d3-force 的 alpha 冷卻（alpha、alphaDecay、alphaMin）；`step()` 推進一格，`isSettled()` 判斷是否穩定；`reheat()` 用在拖曳或結構改變時
+  - 固定節點：`pin(i, x, y)` 與 `unpin(i)`，給拖曳用
+  - 決定性：同一個 seed 的結果完全相同（初始位置用固定 seed 的螺旋或亂數）
+- **完成標準**：
+  - 正確性：沒有 NaN 或 Inf；兩個節點重疊時不會爆炸；相連節點的平均距離明顯小於隨機節點對；固定節點的位置不動
+  - 效能（release）：1,000 個節點、3,000 條邊時單步 < 4ms（PLAN「1000 節點 60 FPS」，留時間給繪圖）；10,000 個節點、30,000 條邊時單步 < 60ms。時間斷言只在 `NEXUS_ENFORCE_PERF` 下檢查
+  - 至少 15 個測試
+- **備註**：
+
+### T-106 dev.ps1 參數轉發
+- **負責**：C
+- **狀態**：待辦
+- **依賴**：T-005
+- **目標**：`./scripts/dev.ps1 test debug --repeat until-fail:20 -R VaultWatcher` 能把後面的參數完整轉給 ctest（目前 PowerShell 會把 `--repeat` 吃掉）
+- **檔案**：`scripts/dev.ps1`、`README.md`
+- **完成標準**：`test`、`build`、`configure` 後面的任意參數（含 `--` 開頭的）都能原樣轉給底層工具；README 附上範例
+- **備註**：
+
+### T-401 Claude Code CLI 橋接（M4 核心）
+- **負責**：C
+- **狀態**：待辦
+- **依賴**：M0
+- **目標**：用 `QProcess` 呼叫 Claude Code CLI 執行任務，把串流輸出解析成結構化事件（PLAN M4）
+- **檔案**：`src/ai/CMakeLists.txt`（新的 `nexus_ai`，只連 QtCore）、`src/ai/AgentRun.h/.cpp`（QObject）、`src/ai/StreamJsonParser.h/.cpp`（純函式，逐行解析）、`src/ai/AgentEvent.h`、`tests/ai/StreamJsonParserTest.cpp`、`tests/ai/AgentRunTest.cpp`、`tests/ai/fake_claude/`（測試用的假 CLI 執行檔，C++ 寫，依參數輸出預錄的 stream-json，並可模擬錯誤、卡住、非 0 結束）
+- **設計**：
+  - 啟動：`<claude 路徑> -p --output-format stream-json --verbose [其他設定的參數]`，工作目錄為專案程式碼資料夾，prompt 從 stdin 寫入後關閉 stdin。CLI 路徑與額外參數由呼叫端設定（之後由設定頁提供），預設是 PATH 上的 `claude`
+  - 事件：`started`、`assistantText(text)`、`toolUse(name, inputSummary)`、`toolResult(isError, summary)`、`finished(AgentResult{success, durationMs, costUsd?, sessionId?, finalText})`、`failed(AgentError{kind, message})`；AgentError 的 kind 包含：找不到執行檔、啟動失敗、非 0 結束、輸出無法解析、逾時、使用者取消
+  - 取消：`cancel()` 先 terminate，3 秒後還沒結束就 kill；可設定整體逾時
+  - 串流：逐行解析 stdout（要處理一行被切成好幾塊送進來的情況），stderr 另外收集，失敗時附在錯誤裡
+  - 解析器對未知的事件類型與欄位要寬容（略過但記錄），不可以因 CLI 升版而崩潰
+  - 不做：組裝 context（之後的 T-402 會依賴 T-201 的 NoteParser）、UI 面板
+- **完成標準**：
+  - 用假 CLI 測試完整流程：正常完成、工具呼叫、CLI 回報錯誤、非 0 結束、逾時、取消、輸出被切塊、巨量輸出（10MB）不卡住
+  - 解析器至少 20 個測試，含畸形 JSON
+  - 根目錄 `CMakeLists.txt` 加入 `add_subdirectory(src/ai)`；`tests/CMakeLists.txt` 新增 `nexus_ai_tests` 與假 CLI 目標（只新增，不重排）
+  - 備註記錄所參考的 stream-json 格式（事件種類與欄位），以及驗證的方式（若本機有安裝 claude，可以實際跑一次簡單的 prompt 對照；沒有的話就照官方文件）
+- **備註**：
