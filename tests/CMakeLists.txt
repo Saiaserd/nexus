@@ -44,3 +44,27 @@ set_tests_properties(nexus_gui_smoke PROPERTIES TIMEOUT 60)
 if(NOT WIN32)
   set_tests_properties(nexus_gui_smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
+
+# UI tests (Widgets, offscreen platform; own main() creates the QApplication).
+add_executable(nexus_ui_tests
+  ui/UiTestMain.cpp
+  ui/ThemeTest.cpp)
+
+target_compile_definitions(nexus_ui_tests PRIVATE NEXUS_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+target_link_libraries(nexus_ui_tests PRIVATE nexus_ui GTest::gtest)
+
+nexus_set_warnings(nexus_ui_tests)
+nexus_enable_sanitizers(nexus_ui_tests)
+nexus_deploy_qt(nexus_ui_tests)
+
+# windeployqt only ships the windows platform plugin; the tests run on the offscreen one.
+find_package(Qt6 REQUIRED COMPONENTS Gui)
+if(WIN32 AND TARGET Qt6::QOffscreenIntegrationPlugin)
+  add_custom_command(TARGET nexus_ui_tests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:Qt6::QOffscreenIntegrationPlugin>
+            $<TARGET_FILE_DIR:nexus_ui_tests>/platforms/
+    VERBATIM)
+endif()
+
+gtest_discover_tests(nexus_ui_tests)

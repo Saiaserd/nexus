@@ -1,0 +1,287 @@
+/* Nexus application style sheet template (ADR 0006).
+   Tokens written between two at-signs are replaced with palette colours by Theme.cpp.
+   Do not write colour literals here; add a palette member instead. */
+
+QWidget {
+    color: @text@;
+}
+
+QMainWindow,
+QDialog {
+    background: @bg@;
+}
+
+QLabel {
+    background: transparent;
+}
+
+QToolTip {
+    background: @card@;
+    color: @text@;
+    border: 1px solid @border@;
+    padding: 4px 6px;
+}
+
+/* ---- menu bar: 30px, chrome background, 1px bottom border (Main.dc.html nav) ---------- */
+QMenuBar {
+    background: @chrome@;
+    border-bottom: 1px solid @border@;
+    padding: 0 6px;
+    spacing: 2px;
+    min-height: 30px;
+}
+
+QMenuBar::item {
+    background: transparent;
+    color: @text@;
+    padding: 3px 10px;
+    margin: 3px 0;
+    border-radius: 4px;
+}
+
+QMenuBar::item:selected,
+QMenuBar::item:pressed {
+    background: @hover@;
+}
+
+/* ---- popup menus (States.dc.html context menu: 30px rows, 5px radius, 5px padding) ---- */
+QMenu {
+    background: @card@;
+    color: @text@;
+    border: 1px solid @border@;
+    padding: 5px;
+}
+
+QMenu::item {
+    min-height: 20px;
+    padding: 4px 24px 4px 30px;
+    border-radius: 5px;
+    background: transparent;
+}
+
+QMenu::item:selected {
+    background: @accentSoft@;
+    color: @accentText@;
+}
+
+QMenu::item:disabled {
+    color: @gutter@;
+    background: transparent;
+}
+
+QMenu::icon {
+    padding-left: 8px;
+}
+
+QMenu::indicator {
+    width: 0;
+    height: 0;
+    image: none;
+}
+
+QMenu::separator {
+    height: 1px;
+    background: @borderSoft@;
+    margin: 4px 6px;
+}
+
+/* ---- status bar: 26px, chrome background, muted 12px text ------------------------------ */
+QStatusBar {
+    background: @chrome@;
+    border-top: 1px solid @border@;
+    color: @muted@;
+    min-height: 26px;
+    font-size: 12px;
+}
+
+QStatusBar::item {
+    border: none;
+}
+
+QStatusBar QLabel {
+    color: @muted@;
+    font-size: 12px;
+}
+
+/* ---- splitter ------------------------------------------------------------------------ */
+QSplitter::handle {
+    background: @border@;
+}
+
+QSplitter::handle:horizontal {
+    width: 1px;
+}
+
+QSplitter::handle:vertical {
+    height: 1px;
+}
+
+/* ---- scroll bars --------------------------------------------------------------------- */
+QScrollBar:vertical {
+    background: transparent;
+    width: 12px;
+    margin: 0;
+}
+
+QScrollBar:horizontal {
+    background: transparent;
+    height: 12px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: @scroll@;
+    border-radius: 3px;
+    min-height: 28px;
+    margin: 2px 3px;
+}
+
+QScrollBar::handle:horizontal {
+    background: @scroll@;
+    border-radius: 3px;
+    min-width: 28px;
+    margin: 3px 2px;
+}
+
+QScrollBar::handle:vertical:hover,
+QScrollBar::handle:horizontal:hover {
+    background: @scrollHover@;
+}
+
+QScrollBar::add-line,
+QScrollBar::sub-line {
+    width: 0;
+    height: 0;
+    border: none;
+    background: none;
+}
+
+QScrollBar::add-page,
+QScrollBar::sub-page {
+    background: transparent;
+}
+
+QAbstractScrollArea {
+    background: transparent;
+    border: none;
+}
+
+/* ---- buttons: secondary by default, `variant` property selects the others -------------- */
+QPushButton {
+    min-height: 32px;
+    padding: 0 16px;
+    border: 1px solid @border@;
+    border-radius: 6px;
+    background: @card@;
+    color: @text@;
+}
+
+QPushButton:hover {
+    background: @hover@;
+}
+
+QPushButton:pressed {
+    background: @accentSoft@;
+}
+
+QPushButton:disabled {
+    color: @gutter@;
+}
+
+QPushButton:focus {
+    border: 1px solid @accent@;
+}
+
+QPushButton[variant="small"] {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+}
+
+QPushButton[variant="primary"] {
+    background: @accent@;
+    border: 1px solid @accent@;
+    color: @onAccent@;
+    font-weight: 500;
+}
+
+QPushButton[variant="primary"]:hover {
+    background: @accentHover@;
+    border: 1px solid @accentHover@;
+}
+
+QPushButton[variant="danger"] {
+    background: @danger@;
+    border: 1px solid @danger@;
+    color: @onAccent@;
+    font-weight: 500;
+}
+
+QPushButton[variant="link"] {
+    min-height: 20px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: @accent@;
+    font-size: 12px;
+}
+
+QPushButton[variant="link"]:hover {
+    background: transparent;
+    color: @accentHover@;
+}
+
+QToolButton {
+    min-width: 28px;
+    min-height: 28px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: @muted@;
+}
+
+QToolButton:hover {
+    background: @hover@;
+}
+
+/* ---- text input ---------------------------------------------------------------------- */
+QLineEdit {
+    min-height: 26px;
+    padding: 0 6px;
+    border: 1px solid @border@;
+    border-radius: 4px;
+    background: @card@;
+    color: @text@;
+    selection-background-color: @accentSoft@;
+    selection-color: @accentText@;
+}
+
+QLineEdit:focus {
+    border: 2px solid @accent@;
+    padding: 0 5px;
+}
+
+QLineEdit[invalid="true"] {
+    border: 2px solid @dangerLine@;
+    padding: 0 5px;
+}
+
+/* ---- check box ----------------------------------------------------------------------- */
+QCheckBox {
+    spacing: 8px;
+    color: @muted@;
+}
+
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid @border@;
+    border-radius: 3px;
+    background: @card@;
+}
+
+QCheckBox::indicator:checked {
+    background: @accent@;
+    border: 1px solid @accent@;
+    image: url(:/ui/icons/@checkImage@);
+}

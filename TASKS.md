@@ -334,7 +334,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-110 主題系統
 - **負責**：D
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：M0
 - **檔案**：`src/ui/Theme.h/.cpp`（`Palette` 結構：bg、chrome、panel、surface、border、borderSoft、text、muted、accent、accentSoft、accentText、marker、gutter、gutterActive、lineActive、link、tag、tagBg、codeBg、kw、ok、danger、warnBg、warnText…）、`src/ui/ThemeManager.h/.cpp`（淺色／深色／跟隨系統、QSettings、`setColorScheme`、發出 `themeChanged` signal）、`src/ui/style/app.qss.in` 或用程式產生 QSS、`src/ui/resources.qrc`（JetBrains Mono、SVG 圖示）、修改 `MainWindow`（加入「檢視 › 主題」選單）、`tests/ui/ThemeTest.cpp`
 - **完成標準**：
@@ -344,6 +344,14 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
   - 跟隨系統時，系統切換深淺色，Nexus 跟著切換
   - 主視窗的選單列、狀態列套用色票
 - **備註**：
+  - 色票：`Palette` 的前 21 項與 `Main.dc.html` 完全相同，測試直接解析設計稿檔案逐項比對。設計稿沒有的顏色（Welcome、States 中的字面色碼，如 card、danger、warnBg）淺色照設計稿；**深色版本設計稿沒有，是我依深色主色調自行決定的**，另外捲軸色（scroll）也是自訂，請 PM／作者確認。
+  - 對比度：text、muted 對 bg、panel、surface、chrome、card 兩套主題都 ≥ 4.5:1（有測試）。
+  - 主題：Fusion + QPalette + `resources/app.qss.in`（`@token@` 由 Palette 展開，測試確認模板內沒有寫死色碼）。`ThemeManager::setMode(mode, persist)`，跟隨系統時監聽 `QStyleHints::colorSchemeChanged`；明確選淺／深時呼叫 `setColorScheme`，原生標題列跟著變色（Windows 11 實機截圖：docs/screenshots/T-110-window-*.png）。
+  - 字型：JetBrains Mono 內嵌 Regular + Medium（各約 270KB，共約 550KB，ADR 寫 300KB 是估計，OFL 授權檔一併放入）。圖示：線條 SVG 放 qrc，執行時依色票上色（新增 Qt6::Svg 相依，只在 `src/ui/CMakeLists.txt` 宣告）。
+  - 沒有用 `resources.qrc`，改用 CMake `qt_add_resources(nexus_ui ...)`，靜態函式庫的資源才會確定被連結。
+  - 開發用選項（`src/ui/DevOptions`）：`--theme light|dark|system`（只對這次執行有效，不寫入設定）、`--size WxH`、`--screenshot x.png`、`--menu 檢視/主題 --menu-screenshot x.png`。
+  - **修正（PM 緊急通知）**：Windows 上 windeployqt 不部署 `qoffscreen`，UI 測試跳出 CRT「Debug Error!」對話框。已改為建置後把 `qoffscreen(d).dll` 複製到測試執行檔旁的 `platforms/`（`tests/CMakeLists.txt`，只影響 `nexus_ui_tests`），並新增 `src/ui/CrashDialogs.h/.cpp`（`suppressCrashDialogs()`：SetErrorMode、`_set_abort_behavior`、CRT report 轉 stderr），由 `nexus_ui_tests` 的 main 與 `nexus --screenshot/--quit-after-show` 使用；以 `EXPECT_DEATH(qFatal(...))` 測試驗證直接失敗不跳窗。core／parser 測試的 main 不在我的範圍，沒有套用，建議 PM 交給 C 一併套用。
+  - 設計稿的選單沒有 mnemonic（`(&F)`），T-111 會一併拿掉。
 
 ### T-111 主視窗框架、歡迎畫面、開啟 vault
 - **負責**：D
