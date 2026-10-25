@@ -13,10 +13,33 @@ constexpr int kMaxFenceLength = 1 << 24;
 constexpr int kMaxInlineDepth = 8;
 constexpr Idx kMaxIndentForBlocks = 3;
 
+// Worst-case guards so one hostile line (minified JSON, base64, a wall of '*') cannot stall the
+// UI thread. Every "look ahead for a closing delimiter" search is bounded twice:
+//  - kMaxSearchDistance: a single search looks at most this many UTF-16 units ahead; a closer
+//    farther away is treated as missing and the opener stays plain text.
+//  - kSearchBudgetPerUnit * line length + kSearchBudgetBase: total units all searches of one
+//    line may scan together. Once spent, further searches fail immediately (plain text).
+// Together they make lexing a line O(n); ordinary lines never get near either limit.
+constexpr Idx kMaxSearchDistance = 4096;
+constexpr Idx kSearchBudgetPerUnit = 8;
+constexpr Idx kSearchBudgetBase = 4096;
+
 struct Ctx {
     QStringView line;
     std::vector<Span>* out = nullptr;
+    Idx budget = 0; // remaining look-ahead budget for this line
 };
+
+// End (exclusive) of the window a search starting at `start` may scan.
+Idx searchLimit(const Ctx& c, Idx start, Idx to)
+{
+    return start + std::min({to - start, kMaxSearchDistance, std::max<Idx>(c.budget, 0)});
+}
+
+void chargeSearch(Ctx& c, Idx scanned)
+{
+    c.budget -= scanned;
+}
 
 void addSpan(Ctx& c, Idx start, Idx end, SpanKind kind, int level = 0)
 {
@@ -82,22 +105,27 @@ bool isTagChar(char32_t cp)
 void lexInline(Ctx& c, Idx from, Idx to, int depth);
 
 // Returns the end (exclusive) of the code span starting at `pos`, or -1 if it is not closed.
-Idx findCodeSpanEnd(QStringView line, Idx pos, Idx to)
+Idx findCodeSpanEnd(Ctx& c, Idx pos, Idx to)
 {
-    const Idx n = runLength(line, pos, to, u'`');
+    const QStringView line = c.line;
+    const Idx limit = searchLimit(c, pos, to);
+    const Idx n = runLength(line, pos, limit, u'`');
     Idx j = pos + n;
-    while (j < to) {
+    Idx result = -1;
+    while (n > 0 && j < limit) {
         if (line[j] == u'`') {
-            const Idx m = runLength(line, j, to, u'`');
+            const Idx m = runLength(line, j, limit, u'`');
             if (m == n) {
-                return j + m;
+                result = j + m;
+                break;
             }
             j += m;
         } else {
             ++j;
         }
     }
-    return -1;
+    chargeSearch(c, j - pos);
+    return result;
 }
 
 // [[target]], [[target#heading]], [[target|alias]]. Returns the end or -1.
@@ -109,10 +137,12 @@ Idx tryWikiLink(Ctx& c, Idx i, Idx to)
     }
     Idx close = -1;
     Idx bar = -1;
-    for (Idx j = i + 2; j + 1 < to; ++j) {
+    const Idx limit = std::min(searchLimit(c, i, to), to - 1);
+    Idx j = i + 2;
+    for (; j < limit; ++j) {
         const QChar ch = line[j];
         if (ch == u'[') {
-            return -1;
+            break;
         }
         if (ch == u']') {
             if (line[j + 1] == u']') {
@@ -124,6 +154,7 @@ Idx tryWikiLink(Ctx& c, Idx i, Idx to)
             bar = j;
         }
     }
+    chargeSearch(c, j - i);
     if (close < 0) {
         return -1;
     }
@@ -147,17 +178,20 @@ Idx tryLink(Ctx& c, Idx i, Idx to)
     const QStringView line = c.line;
     Idx textEnd = -1;
     int nesting = 1;
-    for (Idx j = i + 1; j < to; ++j) {
-        const QChar ch = line[j];
+    const Idx textLimit = searchLimit(c, i, to);
+    Idx k = i + 1;
+    for (; k < textLimit; ++k) {
+        const QChar ch = line[k];
         if (ch == u'\\') {
-            ++j;
+            ++k;
         } else if (ch == u'[') {
             ++nesting;
         } else if (ch == u']' && --nesting == 0) {
-            textEnd = j;
+            textEnd = k;
             break;
         }
     }
+    chargeSearch(c, k - i);
     if (textEnd < 0 || textEnd + 1 >= to || line[textEnd + 1] != u'(') {
         return -1;
     }
@@ -165,7 +199,9 @@ Idx tryLink(Ctx& c, Idx i, Idx to)
     Idx urlEnd = -1;
     Idx close = -1;
     int parens = 1;
-    for (Idx j = urlStart; j < to; ++j) {
+    const Idx urlLimit = searchLimit(c, urlStart, to);
+    Idx j = urlStart;
+    for (; j < urlLimit; ++j) {
         const QChar ch = line[j];
         if (ch == u'\\') {
             ++j;
@@ -180,6 +216,7 @@ Idx tryLink(Ctx& c, Idx i, Idx to)
             break;
         }
     }
+    chargeSearch(c, j - urlStart);
     if (close < 0) {
         return -1;
     }
@@ -234,30 +271,37 @@ Idx tryTag(Ctx& c, Idx i, Idx to)
 }
 
 // Finds the closing delimiter run for an emphasis opener; returns its start or -1.
-Idx findEmphasisCloser(QStringView line, Idx after, Idx to, char16_t delim, Idx use)
+Idx findEmphasisCloser(Ctx& c, Idx after, Idx to, char16_t delim, Idx use)
 {
-    for (Idx j = after; j < to;) {
+    const QStringView line = c.line;
+    const Idx limit = searchLimit(c, after, to);
+    Idx result = -1;
+    Idx j = after;
+    while (j < limit) {
         const QChar ch = line[j];
         if (ch == u'\\') {
             j += 2;
         } else if (ch == u'`') {
-            const Idx end = findCodeSpanEnd(line, j, to);
-            j = end > 0 ? end : j + runLength(line, j, to, u'`');
+            // A code span skips its content; its own search is charged to the budget too.
+            const Idx end = findCodeSpanEnd(c, j, to);
+            j = end > 0 ? end : j + std::max<Idx>(runLength(line, j, limit, u'`'), 1);
         } else if (ch.unicode() == delim) {
-            const Idx m = runLength(line, j, to, delim);
+            const Idx m = runLength(line, j, limit, delim);
             const bool lenOk = use == 3 ? m >= 3 : m == use;
             const bool spaceOk = !line[j - 1].isSpace();
             const bool wordOk =
                 delim != u'_' || j + m >= to || !QChar::isLetterOrNumber(line[j + m].unicode());
             if (lenOk && spaceOk && wordOk) {
-                return j;
+                result = j;
+                break;
             }
             j += m;
         } else {
             ++j;
         }
     }
-    return -1;
+    chargeSearch(c, std::min(j, limit) - after);
+    return result;
 }
 
 // *em*, **strong**, ***both***, and the '_' variants. Returns the end or -1.
@@ -275,7 +319,7 @@ Idx tryEmphasis(Ctx& c, Idx i, Idx to, int depth)
     }
     const Idx use = std::min<Idx>(run, 3);
     const Idx open = after - use;
-    const Idx close = findEmphasisCloser(line, after, to, delim, use);
+    const Idx close = findEmphasisCloser(c, after, to, delim, use);
     if (close < 0) {
         return -1;
     }
@@ -318,7 +362,7 @@ void lexInline(Ctx& c, Idx from, Idx to, int depth)
             next = i + 2;
             break;
         case u'`':
-            next = findCodeSpanEnd(line, i, to);
+            next = findCodeSpanEnd(c, i, to);
             if (next > 0) {
                 addSpan(c, i, next, SpanKind::InlineCode);
             } else {
@@ -354,7 +398,7 @@ LineResult lexInsideFence(QStringView line, LexState prev)
 {
     LineResult r;
     r.next = prev;
-    Ctx c{line, &r.spans};
+    Ctx c{line, &r.spans, kSearchBudgetPerUnit * line.size() + kSearchBudgetBase};
     const Indent ind = measureIndent(line, 0);
     if (ind.columns <= kMaxIndentForBlocks) {
         const Idx run = runLength(line, ind.pos, line.size(), prev.fenceChar);
@@ -504,7 +548,7 @@ LineResult lexLine(QStringView line, LexState prev)
     }
 
     LineResult r;
-    Ctx c{line, &r.spans};
+    Ctx c{line, &r.spans, kSearchBudgetPerUnit * line.size() + kSearchBudgetBase};
     if (tryOpenFence(c, r)) {
         return r;
     }

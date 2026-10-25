@@ -3,6 +3,7 @@
 #include <QStringList>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <random>
 
 #include "parser/MarkdownLexer.h"
 
@@ -770,4 +771,115 @@ TEST(MarkdownLexerPerf, TenThousandMixedLines)
 #ifdef NDEBUG
     EXPECT_LT(ms, 50);
 #endif
+}
+
+// ------------------------------------------------------------ adversarial performance
+
+namespace {
+
+constexpr int kAdversarialLength = 100000;
+
+QString repeatTo(const QString& unit, int length)
+{
+    QString s;
+    s.reserve(length + unit.size());
+    while (s.size() < length) {
+        s += unit;
+    }
+    s.truncate(length);
+    return s;
+}
+
+QString randomMix(unsigned seed, int length)
+{
+    static const QStringList pieces = {
+        QStringLiteral("*"),  QStringLiteral("**"), QStringLiteral("_"),  QStringLiteral("["),
+        QStringLiteral("[["), QStringLiteral("]"),  QStringLiteral("]]"), QStringLiteral("]("),
+        QStringLiteral("("),  QStringLiteral(")"),  QStringLiteral("`"),  QStringLiteral("``"),
+        QStringLiteral("#a"), QStringLiteral(" "),  QStringLiteral("a"),  QStringLiteral("|"),
+        QStringLiteral("\\"), QStringLiteral("中"), QStringLiteral("😀"),
+    };
+    std::mt19937 rng(seed);
+    std::uniform_int_distribution<std::size_t> pick(0, static_cast<std::size_t>(pieces.size()) - 1);
+    QString s;
+    while (s.size() < length) {
+        s += pieces[static_cast<qsizetype>(pick(rng))];
+    }
+    s.truncate(length);
+    return s;
+}
+
+// Lexes `line`, checks the span invariants, and returns the elapsed milliseconds.
+qint64 lexAdversarial(const char* name, const QString& line)
+{
+    QElapsedTimer timer;
+    timer.start();
+    const LineResult r = lexLine(line, {});
+    const qint64 ms = timer.elapsed();
+
+    int prevStart = 0;
+    for (const Span& s : r.spans) {
+        EXPECT_GE(s.start, prevStart) << name;
+        EXPECT_GT(s.length, 0) << name;
+        EXPECT_LE(s.start + s.length, line.size()) << name;
+        prevStart = s.start;
+    }
+    std::cout << "[perf] adversarial " << name << ": " << ms << " ms, " << r.spans.size()
+              << " spans\n";
+    return ms;
+}
+
+} // namespace
+
+TEST(MarkdownLexerAdversarial, SingleLineOfHostileInput)
+{
+    struct Case {
+        const char* name;
+        QString line;
+    };
+    const std::vector<Case> cases = {
+        {"*a", repeatTo(QStringLiteral("*a"), kAdversarialLength)},
+        {"**a", repeatTo(QStringLiteral("**a"), kAdversarialLength)},
+        {"_a<space>", repeatTo(QStringLiteral("_a "), kAdversarialLength)},
+        {"*a<space>", repeatTo(QStringLiteral("*a "), kAdversarialLength)},
+        {"[[", repeatTo(QStringLiteral("[["), kAdversarialLength)},
+        {"[", repeatTo(QStringLiteral("["), kAdversarialLength)},
+        {"[a", repeatTo(QStringLiteral("[a"), kAdversarialLength)},
+        {"](", repeatTo(QStringLiteral("]("), kAdversarialLength)},
+        {"[a](", repeatTo(QStringLiteral("[a]("), kAdversarialLength)},
+        {"[[a|", repeatTo(QStringLiteral("[[a|"), kAdversarialLength)},
+        {"`", repeatTo(QStringLiteral("`"), kAdversarialLength)},
+        {"`<space>", repeatTo(QStringLiteral("` "), kAdversarialLength)},
+        {"``a`", repeatTo(QStringLiteral("``a`"), kAdversarialLength)},
+        {"#a<space>", repeatTo(QStringLiteral("#a "), kAdversarialLength)},
+        {"stars then text", repeatTo(QStringLiteral("*"), kAdversarialLength / 2) +
+                                repeatTo(QStringLiteral("a "), kAdversarialLength / 2)},
+        {"openers then long run", repeatTo(QStringLiteral("*a "), kAdversarialLength / 2) +
+                                      repeatTo(QStringLiteral("*"), kAdversarialLength / 2)},
+        {"heading prefix",
+         QStringLiteral("# ") + repeatTo(QStringLiteral("*a "), kAdversarialLength)},
+        {"list prefix",
+         QStringLiteral("- ") + repeatTo(QStringLiteral("[a]("), kAdversarialLength)},
+        {"random mix seed 1", randomMix(1, kAdversarialLength)},
+        {"random mix seed 2", randomMix(2, kAdversarialLength)},
+        {"random mix seed 3", randomMix(3, kAdversarialLength)},
+    };
+    for (const Case& c : cases) {
+        const qint64 ms = lexAdversarial(c.name, c.line);
+#ifdef NDEBUG
+        EXPECT_LT(ms, 20) << c.name;
+#else
+        (void)ms; // debug/asan builds only check correctness
+#endif
+    }
+}
+
+TEST(MarkdownLexerAdversarial, NormalLinesAreStillLexedAfterCaps)
+{
+    // A long but ordinary paragraph keeps its markup right up to the end.
+    QString line = repeatTo(QStringLiteral("plain words "), 3000);
+    line += QStringLiteral("**bold** [[Link]] #tag");
+    EXPECT_EQ(textsOf(line, SpanKind::StrongText), QStringList{QStringLiteral("bold")});
+    EXPECT_EQ(textsOf(line, SpanKind::WikiLinkTarget), QStringList{QStringLiteral("Link")});
+    EXPECT_EQ(textsOf(line, SpanKind::Tag), QStringList{QStringLiteral("#tag")});
 }
