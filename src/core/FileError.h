@@ -16,6 +16,7 @@ enum class NameError : std::uint8_t {
     TrailingSpaceOrDot,
     ReservedName, // CON, PRN, AUX, NUL, COM1-9, LPT1-9 (also with an extension)
     TooLong,
+    Hidden, // starts with '.'; the vault scan skips such names (ADR 0004)
 };
 
 enum class FileErrorKind : std::uint8_t {

@@ -482,13 +482,13 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-105 小修：隱藏檔名
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-102
 - **目標**：處理 T-102 審核時留下的事項
 - **檔案**：`src/core/NoteFiles.cpp`、`src/core/FileError.h`（若需要新的 NameError）、`tests/core/NoteFilesTest.cpp`
 - **完成標準**：
   - `validateName` 拒絕以 `.` 開頭的名稱（新增 `NameError::Hidden` 或沿用合適的列舉），並附測試（ADR 0004 補充）
-- **備註**：
+- **備註**：新增 `NameError::Hidden`；`validateName` 在尾端空白／點檢查之後判斷，所以 `.` 與 `..` 仍回報 `TrailingSpaceOrDot`（既有測試不變），`.hidden`、`.nexus` 回報 `Hidden`。測試：`ValidateNameTest.RejectsHiddenNames`、`NameValidationOnOperationsTest.RejectsHiddenNamesOnCreateAndRename`（create／rename 都拒絕；放在獨立 suite，因為 `NoteFilesTest` 是 TEST_F fixture，不能混用 TEST）。debug／release／asan／tidy 全部 156 測試通過，format-check 通過。
 
 ### T-301 關係圖力導向佈局（核心演算法）
 - **負責**：A

@@ -95,6 +95,29 @@ TEST(ValidateNameTest, RejectsTrailingSpaceOrDot)
     EXPECT_EQ(check("   "), NameError::TrailingSpaceOrDot);
 }
 
+TEST(ValidateNameTest, RejectsHiddenNames)
+{
+    EXPECT_EQ(check(".hidden"), NameError::Hidden);
+    EXPECT_EQ(check(".nexus"), NameError::Hidden);
+    EXPECT_EQ(check(".a.md"), NameError::Hidden);
+    EXPECT_EQ(check(" .a"), std::nullopt);
+}
+
+TEST(NameValidationOnOperationsTest, RejectsHiddenNamesOnCreateAndRename)
+{
+    QTemporaryDir dir;
+    ASSERT_TRUE(dir.isValid());
+    ASSERT_TRUE(QFile(dir.filePath("a.md")).open(QIODevice::WriteOnly));
+    NoteFiles files(dir.path());
+    const auto created = files.createNote("", ".secret");
+    ASSERT_FALSE(created.has_value());
+    EXPECT_EQ(created.error().nameError, NameError::Hidden);
+    const auto renamed = files.rename("a.md", ".b");
+    ASSERT_FALSE(renamed.has_value());
+    EXPECT_EQ(renamed.error().nameError, NameError::Hidden);
+    EXPECT_TRUE(QFile::exists(dir.filePath("a.md")));
+}
+
 TEST(ValidateNameTest, RejectsReservedWindowsNames)
 {
     for (const char* name : {"CON", "con", "Prn", "AUX", "nul", "COM1", "com9", "LPT1", "lpt9",
