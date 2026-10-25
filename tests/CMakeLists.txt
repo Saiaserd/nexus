@@ -12,3 +12,15 @@ nexus_enable_sanitizers(nexus_core_tests)
 
 # Must come after the sanitizer step so the ASan runtime DLL is already beside the exe.
 gtest_discover_tests(nexus_core_tests)
+
+# Parser tests (link Qt, so the Qt runtime has to be deployed beside the exe).
+add_executable(nexus_parser_tests
+  parser/MarkdownLexerTest.cpp)
+
+target_link_libraries(nexus_parser_tests PRIVATE nexus_parser GTest::gtest GTest::gtest_main)
+
+nexus_set_warnings(nexus_parser_tests)
+nexus_enable_sanitizers(nexus_parser_tests)
+nexus_deploy_qt(nexus_parser_tests)
+
+gtest_discover_tests(nexus_parser_tests)
