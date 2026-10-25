@@ -5,7 +5,8 @@ include(GoogleTest)
 add_executable(nexus_core_tests
   core/SmokeTest.cpp
   core/PathOrderTest.cpp
-  core/VaultTest.cpp)
+  core/VaultTest.cpp
+  core/NoteFilesTest.cpp)
 
 target_link_libraries(nexus_core_tests PRIVATE nexus_core Qt6::Core GTest::gtest GTest::gtest_main)
 

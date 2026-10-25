@@ -225,7 +225,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-102 筆記檔案操作（核心）
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-101
 - **目標**：讀、寫、新增、重新命名、刪除筆記與資料夾
 - **檔案**：
@@ -245,7 +245,16 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
   - 名稱檢查包含：空字串、`\ / : * ? " < > |`、控制字元、結尾是空白或 `.`、Windows 保留名（CON、PRN、AUX、NUL、COM1–9、LPT1–9，不分大小寫，含副檔名的情況）、長度上限
   - 名稱衝突判斷在 Windows 與 macOS 不分大小寫，Linux 分大小寫；只改大小寫（`a.md` → `A.md`）要能成功
   - 每個錯誤情境都有測試
-- **備註**：
+- **備註**：（開發 A）
+  - 新增 NoteDocument.h/.cpp（text 一律 \n；LineEnding Lf/Crlf；hasBom；decode/encode 獨立成純函式，encode(decode(x)) 對單一換行種類的檔案逐 byte 相同）、NoteFiles.h/.cpp、tests/core/NoteFilesTest.cpp、tests/core/TestSupport.h（測試共用 fixture 輔助）。
+  - NoteFiles 設計成「持有 vault 根目錄的類別」而非自由函式：NoteFiles files(root); files.read(rel)…。validateName 是獨立的自由函式（UI 即時檢查用，無副作用）。所有方法同步、需由 worker 執行緒呼叫，不可在 UI 執行緒用。
+  - 介面變更（給 T-103）：NoteFiles::setWriteListener(std::function<void(const NoteInfo&)>)，write 成功後以新的 size 與 mtime 回呼；VaultWatcher 用它登記預期的變動。失敗的 write 不會回呼。
+  - 混合換行（同檔既有 LF 又有 CRLF）：以多數種類為準，寫回時會統一成該種類，因此混合檔無法逐 byte 還原；單孤立 CR 保留原樣。這是刻意的取捨，若 PM 要求完整還原需要改成逐行記錄換行。
+  - 名稱規則：長度上限 250 個 UTF-8 bytes（預留 .md）；檢查順序為 空 → 過長 → 控制字元 → 禁用字元 → 結尾空白或點 → 保留名（取第一個 . 之前的主檔名並略過結尾空白，所以 CON.txt、nul.tar.gz 都擋）。不擋開頭是 . 的名稱（規格沒列），但這種名稱建立後會被 Vault 掃描視為隱藏而看不到，UI 層可考慮自行提示，請 PM 決定是否要加進 validateName。
+  - rename：筆記保留原副檔名（連 .MD 大小寫都保留）；資料夾不加副檔名。名稱衝突由檔案系統判斷（Windows/macOS 不分大小寫，Linux 分），只改大小寫時先改成暫時名稱 <name>.nexus-rename-N 再改成目標，失敗會盡力還原。rename 成同名是 no-op 成功。
+  - createNote 用 QIODevice::NewOnly 建立，名稱重複時加「 1」「 2」…；模組內寫死預設名稱「未命名」是規格要求，屬資料而非錯誤文案。
+  - moveToTrash 用 QFile::moveToTrash，同時適用資料夾；失敗回 TrashFailed，絕不改為永久刪除。測試在沒有資源回收筒的環境會 skip。
+  - 本機 debug 與 asan 皆 48 個測試通過（2 skip：Windows 上的 AccessDenied 測試）；tidy 零警告。
 
 ---
 

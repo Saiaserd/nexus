@@ -10,7 +10,11 @@ add_library(nexus_core STATIC
   PathOrder.h
   PathOrder.cpp
   Vault.h
-  Vault.cpp)
+  Vault.cpp
+  NoteDocument.h
+  NoteDocument.cpp
+  NoteFiles.h
+  NoteFiles.cpp)
 
 # Headers are included as "core/Expected.h" -> expose the src/ directory.
 target_include_directories(nexus_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
