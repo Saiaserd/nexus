@@ -70,7 +70,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-003 clang-format 與 clang-tidy
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-002
 - **目標**：統一程式風格並啟用靜態分析
 - **檔案**：
@@ -80,13 +80,19 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 - **完成標準**：
   - 現有程式碼通過 clang-format 檢查
   - 開啟 clang-tidy 建置時零警告
-- **備註**：
+- **備註**：（A）已完成。
+  - 新增：`.clang-format`（LLVM 為底、4 空格、行寬 100，函式大括號換行、其餘附著）、`.clang-tidy`（bugprone/modernize/performance/cppcoreguidelines；每條排除規則都在檔內註解理由；`WarningsAsErrors: '*'`；`HeaderFilterRegex` 只報我們 `src/`、`tests/` 的標頭）、`cmake/ClangTidy.cmake`（選項 `NEXUS_ENABLE_CLANG_TIDY`，預設 OFF；moc 產生碼不被檢查）。另加 `tidy` preset（configure/build/test，Debug + clang-tidy）以及 `dev.ps1` 子命令 `format`、`format-check`（皆用 git ls-files 取得 C++ 檔）。根 CMakeLists include `ClangTidy`；README 補充用法。CMakePresets.json 因用腳本重寫而整檔重排縮排（內容只多 `tidy`）。
+  - 驗證：`format-check` 通過（故意放入未格式化檔案時會失敗並回傳非零，已移除）；`./scripts/dev.ps1 all tidy` 零警告、4 個測試通過；tidy 實際檢查 main.cpp、NumberParser.cpp、MainWindow.cpp、SmokeTest.cpp 四個來源。debug/release/asan 重新 `all` 皆 exit 0、4 測試過。
+  - **踩到的坑**：VS 的 `Llvm\bin\clang-tidy.exe` 是 32 位元版，分析時直接 access violation 當機；必須用 `Llvm\x64\bin`。`dev.ps1` 預設 `NEXUS_LLVM_BIN` 指到 x64 路徑，CMake 的 find_program 也優先找該目錄。
+  - 首次執行 tidy 抓到的兩個真問題已修正：`enum class ParseError` 改為 `: std::uint8_t`（performance-enum-size）；NumberParser.cpp 的指標運算改用 `std::to_address(text.end())`（pro-bounds-pointer-arithmetic）。
+  - 只有排除清單內的規則被關閉（trailing-return-type、owning-memory、C 陣列、easily-swappable-parameters、magic-numbers、vararg、macro-usage、non-const-global），未使用任何 NOLINT。
+  - clang-format 版本 18.1.8（VS 內建）；CI 的 Linux clang-format 版本須相近，否則格式可能有細微差異（T-005 需注意）。Linux 尚未驗證。
 
 ---
 
 ### T-004 接入 GoogleTest
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-002
 - **目標**：建立測試框架與第一個測試
 - **檔案**：
@@ -97,7 +103,11 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 - **完成標準**：
   - `ctest --preset debug` 與 `ctest --preset asan` 皆通過
   - `src/core` 為獨立 library 目標，不連結 Qt Widgets
-- **備註**：
+- **備註**：（A）已完成。`debug`、`release`、`asan` 的 `./scripts/dev.ps1 all <preset>` 皆 exit 0，4 個測試全過。
+  - 新增：`src/core/`（`Expected.h`、`NumberParser.h/.cpp`、`CMakeLists.txt`，靜態庫 `nexus_core`，PUBLIC include 目錄為 `src/`，所以以 `#include "core/Expected.h"` 引用；目前完全不連結 Qt）、`tests/CMakeLists.txt`、`tests/core/SmokeTest.cpp`（測 `parsePositiveInt` 回傳 `nexus::Expected<int, ParseError>` 的成功與三種錯誤）。根 `CMakeLists.txt` 加入 `enable_testing()` 與 `add_subdirectory(src/core|tests)`。
+  - 測試執行檔呼叫 `nexus_set_warnings`、`nexus_enable_sanitizers`，以 `gtest_discover_tests` 註冊（置於 sanitizer 步驟之後，確保 ASan DLL 已在 exe 旁）。測試未連結 Qt，故沒有呼叫 `nexus_deploy_qt`；之後若有測試連 Qt 需呼叫。
+  - **MSVC ASan LNK2038 真的出現**（gtest.lib 與我們的物件 `annotate_vector` / `annotate_string` 不一致，LNK1319）。選擇方案：在 `cmake/Sanitizers.cmake` 的 MSVC 分支對我們自己的 target 加 `_DISABLE_VECTOR_ANNOTATION` 與 `_DISABLE_STRING_ANNOTATION`。理由：改動小、不用為 ASan 另建一套 vcpkg triplet／相依（建置時間與磁碟加倍、CI 快取也要加倍）。代價：我們程式碼內 `std::vector`／`std::string` 的 container-overflow 偵測失效（堆積／堆疊越界、use-after-free 仍會抓到）。若日後想要完整偵測，可改用 ASan 版 overlay triplet 重建 vcpkg 套件，屆時移除這兩個定義。
+  - Linux 尚未驗證，等 T-005 CI（GCC/Clang 下 tl-expected、GTest 的 find_package 與 sanitizer 組合）。
 
 ---
 
@@ -120,7 +130,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-006 空白主視窗
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-001
 - **目標**：啟動後顯示 Nexus 主視窗
 - **檔案**：
@@ -132,13 +142,18 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
   - 有空的選單列（檔案、編輯、檢視、說明）與狀態列
   - 關閉視窗正常結束，asan 無錯誤或洩漏回報
   - 只做系統原生外觀的空殼；**不做任何主題或自訂樣式**（UI 設計稿確認前不得加，見 CLAUDE.md「UI」）
-- **備註**：
+- **備註**：（A）已完成。
+  - 新增 `src/ui/`（`MainWindow.h/.cpp`、`CMakeLists.txt`，靜態庫 `nexus_ui`，連結 Qt6::Widgets），`main.cpp` 改為 `QApplication` + `MainWindow`，`src/app` 連結 `nexus_ui`；根 CMakeLists 加入 `add_subdirectory(src/ui)`。
+  - `MainWindow`：標題「Nexus」、1280×800、選單列「檔案(&F)（內含「結束」，Ctrl+Q）／編輯／檢視／說明」皆為空選單、狀態列。純系統原生外觀，沒有任何樣式表或主題。選單與狀態列皆為視窗的子物件，無裸 new。
+  - 驗證：`./scripts/dev.ps1 all asan` exit 0（4 個測試過）。手動執行 asan 版 `nexus.exe`：視窗標題為「Nexus」，送出關閉訊息後 **exit code 0，stderr 為空（無 ASan 報告）**。windeployqt 已部署 Qt6Core/Gui/Widgets 等與平台外掛。
+  - 沒有把 GUI 放進 ctest（避免卡在視窗、Linux CI 需 offscreen 平台）；若日後要自動化啟動測試，建議另加 `--quit-after-show` 之類的參數，或以 QT_QPA_PLATFORM=offscreen 並在 windeployqt 加 `--plugindir` 部署 offscreen 外掛。
+  - Windows 的 MSVC ASan 沒有 LeakSanitizer，洩漏偵測只能靠 Linux CI（T-005）。Linux 尚未驗證。
 
 ---
 
 ### T-007 改用獨立 vcpkg，移除自行下載 pkgconf
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-002
 - **目標**：依 ADR 0003，以釘死版本的獨立 vcpkg 取代 VS 內建 vcpkg
 - **檔案**：
@@ -151,7 +166,12 @@ exus` 與 `build/` 後，在乾淨的 PowerShell 執行 `./scripts/dev.ps1 all d
   - 腳本裡不再有任何沒驗證雜湊的二進位下載
   - `debug`、`release`、`asan` 三個 preset 都建置成功
   - 備註列出升級後各套件的實際版本（尤其 tree-sitter）
-- **備註**：（PM）審核 T-001 時提出，見 ADR 0003。
+- **備註**：（A）已完成。
+  - `builtin-baseline` = `9e593bb18ea69cc5095e012465dcd675a822ed0d`，對應 vcpkg release tag **2026.07.29**（注意該 tag 是 annotated tag，`git ls-remote` 的 `refs/tags/2026.07.29` 是 tag 物件、commit 要看 `^{}` 那行）。
+  - 升級後實際版本：gtest 1.17.0#3、md4c 0.5.3、sqlite3 3.53.4（core,fts5,json1）、tl-expected 1.3.1、**tree-sitter 0.26.11**。
+  - `scripts/dev.ps1`：新增 `Initialize-Vcpkg`（clone 到 `%LOCALAPPDATA%\nexus\vcpkg`、checkout baseline、bootstrap，以 `.nexus-bootstrapped` 戳記判斷 baseline 變更時重 bootstrap）；刪除 `Ensure-PkgConfig`、`PKG_CONFIG`、`VCPKG_KEEP_ENV_VARS`、`VCPKG_DOWNLOADS` 設定。腳本中不再有任何自行下載的二進位，下載皆由 vcpkg 驗證 SHA512。
+  - 注意：`vcvars64.bat` 本身會匯出 VCPKG_ROOT 指向 VS 內建 vcpkg，所以腳本在匯入 VS 環境前先記下呼叫者的 `VCPKG_ROOT`；只有它不在 VS 目錄下才當作自備 vcpkg 使用，否則用受管理的 clone。
+  - 驗收：刪除 `build/`、舊的 `%LOCALAPPDATA%\vcpkg`（含 pkgconf 快取 `%LOCALAPPDATA%\nexus\tools`）、vcpkg clone 內的 downloads/buildtrees/packages/vcpkg.exe 與 bootstrap 戳記後（clone 本身沿用以省流量，bootstrap 與相依從頭建），`./scripts/dev.ps1 all debug|release|asan` 皆 exit 0。
 
 ---
 

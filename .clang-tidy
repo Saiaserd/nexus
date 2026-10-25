@@ -1,0 +1,41 @@
+---
+# Enabled families (CLAUDE.md): bugprone, modernize, performance, cppcoreguidelines.
+# Every exclusion below states why. Prefer fixing code or a narrow // NOLINT(check) with a
+# reason over adding exclusions here.
+Checks: >
+  -*,
+  bugprone-*,
+  modernize-*,
+  performance-*,
+  cppcoreguidelines-*,
+  -modernize-use-trailing-return-type,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-avoid-c-arrays,
+  -modernize-avoid-c-arrays,
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-macro-usage,
+  -cppcoreguidelines-avoid-non-const-global-variables
+# Exclusion reasons:
+#  modernize-use-trailing-return-type
+#      Style preference only; the project uses conventional leading return types.
+#  cppcoreguidelines-owning-memory
+#      Requires gsl::owner<>. Qt parent/child ownership (CLAUDE.md) hands raw pointers around
+#      by design; the "no naked new/delete" rule is enforced by review instead.
+#  cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays
+#      main(int, char* argv[]) is the signature Qt (QApplication) and the C++ standard require.
+#  bugprone-easily-swappable-parameters
+#      Extremely noisy on ordinary APIs (e.g. two QString arguments); little real bug yield.
+#  cppcoreguidelines-avoid-magic-numbers
+#      Alias of readability-magic-numbers: flags every literal in UI geometry and in test data.
+#  cppcoreguidelines-pro-type-vararg
+#      Triggered by Qt (qDebug, QMessageLogger) and GoogleTest assertion macros.
+#  cppcoreguidelines-macro-usage
+#      Qt (Q_OBJECT, Q_ASSERT, ...) and GoogleTest (TEST, EXPECT_*) are macro based.
+#  cppcoreguidelines-avoid-non-const-global-variables
+#      GoogleTest's TEST() macro registers a global object for every test.
+WarningsAsErrors: '*'
+# Only report diagnostics for our own headers (not Qt, vcpkg or generated moc code).
+HeaderFilterRegex: '.*[/\](src|tests)[/\].*'
+FormatStyle: file

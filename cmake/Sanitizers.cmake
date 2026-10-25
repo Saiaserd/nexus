@@ -32,6 +32,15 @@ function(nexus_enable_sanitizers target)
 
   if(MSVC)
     target_compile_options(${target} PRIVATE /fsanitize=address)
+    # The vcpkg static libraries (gtest, ...) are built WITHOUT ASan. MSVC's STL
+    # container annotations differ between ASan and non-ASan objects, and linking
+    # them together fails with LNK2038 (annotate_vector / annotate_string). Disable
+    # the annotations in our own objects so both agree. Trade-off: no
+    # container-overflow detection inside std::vector / std::string (heap and stack
+    # overflows are still caught).
+    target_compile_definitions(${target} PRIVATE
+      _DISABLE_VECTOR_ANNOTATION
+      _DISABLE_STRING_ANNOTATION)
     # The dynamic ASan runtime ships next to cl.exe (and is on PATH inside a
     # VS developer prompt). Copy it beside executables so they also run from
     # Explorer / ctest without relying on PATH. The debug CRT (/MDd) uses the
