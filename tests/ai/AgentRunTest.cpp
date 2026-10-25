@@ -44,7 +44,8 @@ AgentRunConfig fakeConfig(const QStringList& fakeArgs)
 
 QStringList replayArgs(const QString& fixture, const QStringList& more = {})
 {
-    return QStringList{QStringLiteral("--fake=replay"), QStringLiteral("--fake-arg=") + kFixtures + u'/' + fixture} +
+    return QStringList{QStringLiteral("--fake=replay"),
+                       QStringLiteral("--fake-arg=") + kFixtures + u'/' + fixture} +
            more;
 }
 
@@ -55,16 +56,18 @@ Outcome runAgent(AgentRun& run, const QString& prompt, int limitMs = 30000,
     Outcome out;
     QEventLoop loop;
     QObject::connect(&run, &AgentRun::started, [&] { out.startedSignal = true; });
-    QObject::connect(&run, &AgentRun::sessionInitialized, [&](const QString& id, const QString& model) {
-        out.log << QStringLiteral("init:") + id + u'|' + model;
-    });
+    QObject::connect(&run, &AgentRun::sessionInitialized,
+                     [&](const QString& id, const QString& model) {
+                         out.log << QStringLiteral("init:") + id + u'|' + model;
+                     });
     QObject::connect(&run, &AgentRun::assistantText,
                      [&](const QString& t) { out.log << QStringLiteral("text:") + t; });
     QObject::connect(&run, &AgentRun::toolUse, [&](const QString& n, const QString& s) {
         out.log << QStringLiteral("tool:") + n + u'|' + s;
     });
     QObject::connect(&run, &AgentRun::toolResult, [&](bool e, const QString& s) {
-        out.log << QStringLiteral("result:") + (e ? QStringLiteral("err") : QStringLiteral("ok")) + u'|' + s;
+        out.log << QStringLiteral("result:") + (e ? QStringLiteral("err") : QStringLiteral("ok")) +
+                       u'|' + s;
     });
     QObject::connect(&run, &AgentRun::finished, [&](const AgentResult& r) {
         out.result = r;
@@ -118,8 +121,8 @@ TEST(AgentRun, NormalCompletionWithRealFixture)
 
 TEST(AgentRun, ToolUseAndToolResultThenMaxTurnsResult)
 {
-    AgentRun run(fakeConfig(replayArgs(QStringLiteral("tool_use_max_turns.jsonl"),
-                                       {QStringLiteral("--fake-exit=1")})));
+    AgentRun run(fakeConfig(
+        replayArgs(QStringLiteral("tool_use_max_turns.jsonl"), {QStringLiteral("--fake-exit=1")})));
     const Outcome o = runAgent(run, QStringLiteral("x"));
     // The CLI exits 1 here, but it delivered a result line: that is reported as finished.
     ASSERT_TRUE(o.hasResult);
@@ -131,7 +134,8 @@ TEST(AgentRun, ToolUseAndToolResultThenMaxTurnsResult)
 
 TEST(AgentRun, CliReportedErrorIsFinishedWithFailure)
 {
-    AgentRun run(fakeConfig(replayArgs(QStringLiteral("cli_error.jsonl"), {QStringLiteral("--fake-exit=1")})));
+    AgentRun run(fakeConfig(
+        replayArgs(QStringLiteral("cli_error.jsonl"), {QStringLiteral("--fake-exit=1")})));
     const Outcome o = runAgent(run, QStringLiteral("x"));
     ASSERT_TRUE(o.hasResult);
     EXPECT_FALSE(o.result.success);
@@ -164,8 +168,9 @@ TEST(AgentRun, PromptArgumentsAndWorkingDirectoryReachTheCli)
 
 TEST(AgentRun, OutputSplitIntoTinyChunks)
 {
-    AgentRun run(fakeConfig(replayArgs(QStringLiteral("tool_use_max_turns.jsonl"),
-                                       {QStringLiteral("--fake-chunk=7"), QStringLiteral("--fake-exit=1")})));
+    AgentRun run(fakeConfig(
+        replayArgs(QStringLiteral("tool_use_max_turns.jsonl"),
+                   {QStringLiteral("--fake-chunk=7"), QStringLiteral("--fake-exit=1")})));
     const Outcome o = runAgent(run, QStringLiteral("x"));
     ASSERT_TRUE(o.hasResult);
     EXPECT_TRUE(o.log.contains("tool:Bash|echo hi"));
@@ -299,7 +304,8 @@ TEST(AgentRun, StartTwiceIsRejected)
 
 TEST(AgentRun, TenMegabytesOfOutputDoesNotStall)
 {
-    AgentRun run(fakeConfig({QStringLiteral("--fake=big"), QStringLiteral("--fake-bytes=10485760")}));
+    AgentRun run(
+        fakeConfig({QStringLiteral("--fake=big"), QStringLiteral("--fake-bytes=10485760")}));
     int texts = 0;
     QObject::connect(&run, &AgentRun::assistantText, [&texts](const QString&) { ++texts; });
     const Outcome o = runAgent(run, QStringLiteral("x"), 60000);
@@ -310,7 +316,8 @@ TEST(AgentRun, TenMegabytesOfOutputDoesNotStall)
 
 TEST(AgentRun, TenMegabyteSingleLine)
 {
-    AgentRun run(fakeConfig({QStringLiteral("--fake=bigline"), QStringLiteral("--fake-bytes=10485760")}));
+    AgentRun run(
+        fakeConfig({QStringLiteral("--fake=bigline"), QStringLiteral("--fake-bytes=10485760")}));
     const Outcome o = runAgent(run, QStringLiteral("x"), 60000);
     ASSERT_TRUE(o.hasResult) << (o.hasError ? o.error.message.toStdString() : "timeout");
     ASSERT_GE(o.log.size(), 2);

@@ -126,15 +126,19 @@ int main(int argc, char* argv[])
 
     if (hasFlag(args, "--fake-ignore-term")) {
         // SIG_IGN is a C macro expanding to a cast.
-        std::signal(SIGTERM, SIG_IGN); // NOLINT(cppcoreguidelines-pro-type-cstyle-cast,performance-no-int-to-ptr)
+        std::signal(
+            SIGTERM,
+            SIG_IGN); // NOLINT(cppcoreguidelines-pro-type-cstyle-cast,performance-no-int-to-ptr)
     }
 
     const std::string prompt = readStdin();
 
     if (scenario == "replay") {
         std::ifstream in(optionValue(args, "--fake-arg"), std::ios::binary);
-        const std::string data{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
-        const auto chunk = static_cast<std::size_t>(std::stoul(optionValue(args, "--fake-chunk", "0")));
+        const std::string data{std::istreambuf_iterator<char>(in),
+                               std::istreambuf_iterator<char>()};
+        const auto chunk =
+            static_cast<std::size_t>(std::stoul(optionValue(args, "--fake-chunk", "0")));
         if (chunk == 0) {
             writeOut(data);
         } else {
@@ -167,7 +171,8 @@ int main(int argc, char* argv[])
         sleepForever();
     }
     if (scenario == "big" || scenario == "bigline") {
-        const auto total = static_cast<std::size_t>(std::stoull(optionValue(args, "--fake-bytes", "1000")));
+        const auto total =
+            static_cast<std::size_t>(std::stoull(optionValue(args, "--fake-bytes", "1000")));
         writeLine(kInit);
         if (scenario == "bigline") {
             writeLine(assistantText(std::string(total, 'x')));

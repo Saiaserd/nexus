@@ -58,7 +58,10 @@ QString truncated(QString text)
 
 QJsonArray messageContent(const QJsonObject& root)
 {
-    return root.value(QLatin1String("message")).toObject().value(QLatin1String("content")).toArray();
+    return root.value(QLatin1String("message"))
+        .toObject()
+        .value(QLatin1String("content"))
+        .toArray();
 }
 
 // Short digest of a tool_use input object: the most telling single field, else compact JSON.
@@ -68,8 +71,8 @@ QString summarizeToolInput(const QJsonValue& input)
         return {};
     }
     const QJsonObject obj = input.toObject();
-    for (const char* key : {"command", "file_path", "path", "pattern", "url", "query", "prompt",
-                            "description"}) {
+    for (const char* key :
+         {"command", "file_path", "path", "pattern", "url", "query", "prompt", "description"}) {
         const QJsonValue v = obj.value(QLatin1String(key));
         if (v.isString() && !v.toString().isEmpty()) {
             return truncated(v.toString());
@@ -133,8 +136,8 @@ AgentResult parseResult(const QJsonObject& root)
 {
     AgentResult r;
     const QString subtype = root.value(QLatin1String("subtype")).toString();
-    r.success = subtype == QLatin1String("success") &&
-                !root.value(QLatin1String("is_error")).toBool(false);
+    r.success =
+        subtype == QLatin1String("success") && !root.value(QLatin1String("is_error")).toBool(false);
     const QJsonValue duration = root.contains(QLatin1String("duration_ms"))
                                     ? root.value(QLatin1String("duration_ms"))
                                     : root.value(QLatin1String("duration_api_ms"));

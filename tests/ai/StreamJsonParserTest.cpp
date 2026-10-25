@@ -129,7 +129,8 @@ TEST(StreamJsonParser, ToolResultArrayContent)
 
 TEST(StreamJsonParser, PlainUserMessageProducesNothing)
 {
-    const auto r = parseStreamJsonLine(R"({"type":"user","message":{"role":"user","content":"hello"}})");
+    const auto r =
+        parseStreamJsonLine(R"({"type":"user","message":{"role":"user","content":"hello"}})");
     EXPECT_TRUE(ok(r).events.isEmpty());
 }
 
@@ -165,13 +166,15 @@ TEST(StreamJsonParser, ResultIsErrorOverridesSuccessSubtype)
 
 TEST(StreamJsonParser, ResultWithoutTextUsesSubtypeWhenFailed)
 {
-    const auto r = parseStreamJsonLine(R"({"type":"result","subtype":"error_during_execution","is_error":true})");
+    const auto r = parseStreamJsonLine(
+        R"({"type":"result","subtype":"error_during_execution","is_error":true})");
     EXPECT_EQ(only<AgentResult>(ok(r)).finalText, "error_during_execution");
 }
 
 TEST(StreamJsonParser, ResultDurationFallsBackToApiDuration)
 {
-    const auto r = parseStreamJsonLine(R"({"type":"result","subtype":"success","duration_api_ms":77})");
+    const auto r =
+        parseStreamJsonLine(R"({"type":"result","subtype":"success","duration_api_ms":77})");
     EXPECT_EQ(only<AgentResult>(ok(r)).durationMs, 77);
 }
 
@@ -200,7 +203,8 @@ TEST(StreamJsonParser, UnknownFieldsAndWrongTypesAreTolerated)
 TEST(StreamJsonParser, MessageWithoutContentIsEmpty)
 {
     EXPECT_TRUE(ok(parseStreamJsonLine(R"({"type":"assistant"})")).events.isEmpty());
-    EXPECT_TRUE(ok(parseStreamJsonLine(R"({"type":"assistant","message":{"content":"str"}})")).events.isEmpty());
+    EXPECT_TRUE(ok(parseStreamJsonLine(R"({"type":"assistant","message":{"content":"str"}})"))
+                    .events.isEmpty());
 }
 
 TEST(StreamJsonParser, MalformedJsonIsAnError)
@@ -230,7 +234,8 @@ TEST(StreamJsonParser, ErrorKeepsTruncatedOffendingLine)
 TEST(StreamJsonParser, TruncatedUtf8AndBinaryGarbageDoNotCrash)
 {
     EXPECT_FALSE(parseStreamJsonLine(QByteArray("\xff\xfe\x00\x01{", 5)).has_value());
-    EXPECT_FALSE(parseStreamJsonLine(QByteArray("{\"type\":\"result\",\"result\":\"\xe4\xbd")).has_value());
+    EXPECT_FALSE(
+        parseStreamJsonLine(QByteArray("{\"type\":\"result\",\"result\":\"\xe4\xbd")).has_value());
 }
 
 TEST(StreamJsonParser, DeeplyNestedJsonDoesNotCrash)
