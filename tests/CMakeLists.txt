@@ -8,6 +8,7 @@ add_executable(nexus_core_tests
   core/VaultTest.cpp
   core/NoteFilesTest.cpp
   core/VaultWatcherTest.cpp
+  core/ForceLayoutTest.cpp
   core/TestMain.cpp)
 
 target_link_libraries(nexus_core_tests PRIVATE nexus_core Qt6::Core Qt6::Test GTest::gtest)

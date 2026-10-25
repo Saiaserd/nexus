@@ -16,7 +16,12 @@ add_library(nexus_core STATIC
   NoteFiles.h
   NoteFiles.cpp
   VaultWatcher.h
-  VaultWatcher.cpp)
+  VaultWatcher.cpp
+  graph/Vec2.h
+  graph/QuadTree.h
+  graph/QuadTree.cpp
+  graph/ForceLayout.h
+  graph/ForceLayout.cpp)
 
 # Headers are included as "core/Expected.h" -> expose the src/ directory.
 target_include_directories(nexus_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
