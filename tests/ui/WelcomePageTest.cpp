@@ -198,9 +198,8 @@ TEST_F(WelcomePageTest, ClicksReportTheRightRequests)
         << "missing rows are not clickable";
 
     for (auto* button : page.findChildren<QPushButton*>()) {
-        if (button->text() == QStringLiteral("從清單移除")) {
-            button->click();
-        } else if (button->text() == QStringLiteral("清除清單")) {
+        if (button->text() == QStringLiteral("從清單移除") ||
+            button->text() == QStringLiteral("清除清單")) {
             button->click();
         }
     }

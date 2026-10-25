@@ -7,6 +7,7 @@
 #include <QCursor>
 #include <QDir>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QFrame>
 #include <QLabel>
 #include <QMenu>
@@ -18,8 +19,12 @@
 #include <QStatusBar>
 #include <QVBoxLayout>
 
+#include "ui/EditorStatusWidget.h"
+#include "ui/EditorTabs.h"
 #include "ui/Icons.h"
 #include "ui/LoadingPage.h"
+#include "ui/NoteEditor.h"
+#include "ui/NoteSession.h"
 #include "ui/ThemeManager.h"
 #include "ui/UiText.h"
 #include "ui/VaultSidebar.h"
@@ -92,37 +97,41 @@ void MainWindow::buildMenus()
     m_recentMenu = fileMenu->addMenu(tr("最近開啟"));
     connect(m_recentMenu, &QMenu::aboutToShow, this, &MainWindow::refreshRecentMenu);
     fileMenu->addSeparator();
-    // New note, save and close tab need the editor (T-112, T-113); they exist so that the menu
-    // is complete and the shortcuts are reserved, and stay disabled until then.
+    // New note needs the file tree (T-112) and stays disabled until then.
     m_newNoteAction = fileMenu->addAction(tr("新增筆記"));
     m_newNoteAction->setShortcut(QKeySequence::New);
-    m_saveAction = fileMenu->addAction(tr("儲存"));
-    m_saveAction->setShortcut(QKeySequence::Save);
-    m_closeTabAction = fileMenu->addAction(tr("關閉分頁"));
-    m_closeTabAction->setShortcut(QKeySequence::Close);
-    for (QAction* action : {m_newNoteAction, m_saveAction, m_closeTabAction}) {
-        action->setEnabled(false);
-    }
+    m_newNoteAction->setEnabled(false);
+    m_saveAction = fileMenu->addAction(tr("儲存"), QKeySequence::Save, this,
+                                       [this] { m_tabs->saveCurrent(); });
+    m_closeTabAction = fileMenu->addAction(tr("關閉分頁"), QKeySequence::Close, this,
+                                           [this] { m_tabs->closeCurrentTab(); });
     fileMenu->addSeparator();
     m_closeVaultAction = fileMenu->addAction(tr("關閉 vault"), this, [this] { m_session.close(); });
     fileMenu->addSeparator();
     fileMenu->addAction(tr("結束"), QKeySequence::Quit, this, &QWidget::close);
 
-    // The editor (T-113) takes these over; until then they are disabled.
+    // Forwarded to the editor of the current tab. The editor handles the same keys itself while
+    // it has focus, so the shortcuts are only shown here and never steal keys from it.
     QMenu* editMenu = menuBar()->addMenu(tr("編輯"));
-    const auto addEdit = [editMenu](const QString& text, QKeySequence::StandardKey key) {
-        QAction* action = editMenu->addAction(text);
+    const auto addEdit = [this, editMenu](const QString& text, QKeySequence::StandardKey key,
+                                          void (QPlainTextEdit::*slot)()) {
+        QAction* action = editMenu->addAction(text, this, [this, slot] {
+            if (NoteEditor* editor = m_tabs->currentEditor()) {
+                (editor->*slot)();
+            }
+        });
         action->setShortcut(key);
-        action->setEnabled(false);
+        action->setShortcutContext(Qt::WidgetShortcut);
+        m_editActions.append(action);
     };
-    addEdit(tr("復原"), QKeySequence::Undo);
-    addEdit(tr("重做"), QKeySequence::Redo);
+    addEdit(tr("復原"), QKeySequence::Undo, &QPlainTextEdit::undo);
+    addEdit(tr("重做"), QKeySequence::Redo, &QPlainTextEdit::redo);
     editMenu->addSeparator();
-    addEdit(tr("剪下"), QKeySequence::Cut);
-    addEdit(tr("複製"), QKeySequence::Copy);
-    addEdit(tr("貼上"), QKeySequence::Paste);
+    addEdit(tr("剪下"), QKeySequence::Cut, &QPlainTextEdit::cut);
+    addEdit(tr("複製"), QKeySequence::Copy, &QPlainTextEdit::copy);
+    addEdit(tr("貼上"), QKeySequence::Paste, &QPlainTextEdit::paste);
     editMenu->addSeparator();
-    addEdit(tr("全選"), QKeySequence::SelectAll);
+    addEdit(tr("全選"), QKeySequence::SelectAll, &QPlainTextEdit::selectAll);
 
     QMenu* viewMenu = menuBar()->addMenu(tr("檢視"));
     m_themeMenu = viewMenu->addMenu(tr("主題"));
@@ -149,13 +158,13 @@ void MainWindow::buildMenus()
         refreshThemeChecks();
     });
 
-    // Used by the editor (T-113); only the preference is kept here.
     m_lineNumbersAction = viewMenu->addAction(tr("顯示行號"));
     m_lineNumbersAction->setCheckable(true);
     m_lineNumbersAction->setChecked(
         m_settings.value(QLatin1StringView(kLineNumbersKey), true).toBool());
     connect(m_lineNumbersAction, &QAction::toggled, this, [this](bool shown) {
         m_settings.setValue(QLatin1StringView(kLineNumbersKey), shown);
+        m_tabs->setLineNumbersVisible(shown);
         refreshThemeChecks();
     });
 
@@ -180,10 +189,18 @@ void MainWindow::buildContent()
     auto* workspace = new QFrame(m_stack);
     workspace->setObjectName(QStringLiteral("workspace"));
     auto* workspaceLayout = new QVBoxLayout(workspace);
-    auto* hint = new QLabel(tr("從左側選擇一篇筆記，或按 Ctrl+N 新增"), workspace);
-    hint->setObjectName(QStringLiteral("workspaceHint"));
-    hint->setAlignment(Qt::AlignCenter);
-    workspaceLayout->addWidget(hint);
+    workspaceLayout->setContentsMargins(0, 0, 0, 0);
+    m_tabs = new EditorTabs(m_theme, workspace);
+    m_tabs->setLineNumbersVisible(m_lineNumbersAction->isChecked());
+    workspaceLayout->addWidget(m_tabs);
+    connect(m_tabs, &EditorTabs::currentChanged, this, [this] {
+        refreshTitle();
+        refreshActions();
+    });
+    connect(m_tabs, &EditorTabs::saveFailed, this,
+            [this](const QString& relPath, const QString& message) {
+                statusBar()->showMessage(QStringLiteral("%1：%2").arg(relPath, message), 8000);
+            });
     m_stack->addWidget(m_welcome); // Page::Welcome
     m_stack->addWidget(m_loading); // Page::Loading
     m_stack->addWidget(workspace); // Page::Workspace
@@ -199,6 +216,8 @@ void MainWindow::buildContent()
     m_status = new VaultStatusWidget(m_theme, this);
     statusBar()->setSizeGripEnabled(false);
     statusBar()->addWidget(m_status);
+    m_editorStatus = new EditorStatusWidget(*m_tabs, this);
+    statusBar()->addPermanentWidget(m_editorStatus);
 
     connect(m_welcome, &WelcomePage::openFolderRequested, this, &MainWindow::chooseAndOpenVault);
     connect(m_welcome, &WelcomePage::createVaultRequested, this, &MainWindow::chooseAndCreateVault);
@@ -248,11 +267,20 @@ void MainWindow::refreshActions()
     m_openAction->setEnabled(idle);
     m_createAction->setEnabled(idle);
     m_recentMenu->setEnabled(idle);
+    const bool hasTab = m_tabs->count() > 0;
+    m_saveAction->setEnabled(hasTab);
+    m_closeTabAction->setEnabled(hasTab);
+    for (QAction* action : m_editActions) {
+        action->setEnabled(hasTab);
+    }
 }
 
 void MainWindow::refreshTitle()
 {
-    setWindowTitle(formatWindowTitle(QString(), m_session.isOpen() ? m_session.name() : QString()));
+    const NoteSession* note = m_tabs->currentSession();
+    setWindowTitle(
+        formatWindowTitle(note != nullptr ? QFileInfo(note->relPath()).fileName() : QString(),
+                          m_session.isOpen() ? m_session.name() : QString()));
 }
 
 void MainWindow::refreshRecentMenu()
@@ -311,6 +339,9 @@ void MainWindow::chooseAndCreateVault()
 
 void MainWindow::onOpening(const QString& path)
 {
+    // The tabs keep the old vault's NoteFiles alive, so they can still be written.
+    m_tabs->saveAllAndWait();
+    m_tabs->setVault(nullptr, QString());
     m_loading->setVaultName(RecentVaults::displayName(path));
     m_welcome->setBusy(true);
     m_sidebar->hide();
@@ -328,6 +359,7 @@ void MainWindow::onOpened()
     m_welcome->setRecent(m_recent.entries());
 
     m_sidebar->setVault(m_session.name(), m_session.noteCount());
+    m_tabs->setVault(m_session.files(), m_session.name());
     m_sidebar->setVisible(m_sidebarAction->isChecked());
     m_stack->setCurrentIndex(static_cast<int>(Page::Workspace));
     m_status->setState(VaultSession::State::Open, m_session.noteCount());
@@ -353,6 +385,8 @@ void MainWindow::onOpenFailed(const QString& /*path*/, const VaultOpenError& err
 
 void MainWindow::onClosed()
 {
+    m_tabs->saveAllAndWait();
+    m_tabs->setVault(nullptr, QString());
     // Closing on purpose: do not reopen this vault at the next start.
     m_recent.setLastOpenVault(QString());
     m_welcome->setBusy(false);
@@ -398,6 +432,7 @@ void MainWindow::showAbout()
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
+    m_tabs->saveAllAndWait();
     m_settings.setValue(QLatin1StringView(kGeometryKey), saveGeometry());
     m_settings.setValue(QLatin1StringView(kSplitterKey), m_splitter->saveState());
     QMainWindow::closeEvent(event);

@@ -10,6 +10,7 @@
 #include <QTimer>
 #include <QWidget>
 
+#include "ui/EditorTabs.h"
 #include "ui/MainWindow.h"
 #include "ui/ThemeManager.h"
 
@@ -70,6 +71,19 @@ bool applyDeveloperOptions(const QStringList& args, ThemeManager& theme, MainWin
     const bool opened = !vault.isEmpty();
     if (opened) {
         window.openVault(vault);
+        // --open a.md,b.md: open these notes as tabs once the vault is open (last one current).
+        const QStringList notes =
+            valueOf(args, QStringLiteral("--open")).split(QLatin1Char(','), Qt::SkipEmptyParts);
+        if (!notes.isEmpty()) {
+            auto* once = new QObject(&window); // deleted after the first opened()
+            QObject::connect(&window.session(), &VaultSession::opened, once,
+                             [&window, notes, once] {
+                                 for (const QString& note : notes) {
+                                     window.tabs().openNote(note, /*newTab=*/true);
+                                 }
+                                 once->deleteLater();
+                             });
+        }
     }
 
     const QString menuPath = valueOf(args, QStringLiteral("--menu"));

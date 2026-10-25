@@ -14,10 +14,20 @@ add_library(nexus_ui STATIC
   Icons.cpp
   LoadingPage.h
   LoadingPage.cpp
+  MarkdownHighlighter.h
+  MarkdownHighlighter.cpp
   MainWindow.h
   MainWindow.cpp
+  NoteEditor.h
+  NoteEditor.cpp
+  NoteSession.h
+  NoteSession.cpp
   DevOptions.h
   DevOptions.cpp
+  EditorStatusWidget.h
+  EditorStatusWidget.cpp
+  EditorTabs.h
+  EditorTabs.cpp
   RecentVaults.h
   RecentVaults.cpp
   Theme.h
@@ -33,7 +43,9 @@ add_library(nexus_ui STATIC
   VaultStatusWidget.h
   VaultStatusWidget.cpp
   WelcomePage.h
-  WelcomePage.cpp)
+  WelcomePage.cpp
+  WordCount.h
+  WordCount.cpp)
 
 # Resources of a static library: qt_add_resources keeps them linked into the final executable.
 qt_add_resources(nexus_ui nexus_ui_resources
@@ -61,7 +73,7 @@ qt_add_resources(nexus_ui nexus_ui_resources
     resources/icons/refresh.svg)
 
 target_include_directories(nexus_ui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
-target_link_libraries(nexus_ui PUBLIC nexus_core Qt6::Widgets Qt6::Svg)
+target_link_libraries(nexus_ui PUBLIC nexus_core nexus_parser Qt6::Widgets Qt6::Svg)
 target_compile_definitions(nexus_ui PRIVATE NEXUS_VERSION="${PROJECT_VERSION}")
 
 nexus_set_warnings(nexus_ui)

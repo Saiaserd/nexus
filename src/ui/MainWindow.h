@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include <QList>
 #include <QMainWindow>
 
 #include "ui/RecentVaults.h"
@@ -16,6 +17,8 @@ class QStackedWidget;
 
 namespace nexus::ui {
 
+class EditorStatusWidget;
+class EditorTabs;
 class LoadingPage;
 class ThemeManager;
 class VaultSidebar;
@@ -40,6 +43,7 @@ public:
 
     [[nodiscard]] VaultSession& session() { return m_session; }
     [[nodiscard]] Page currentPage() const;
+    [[nodiscard]] EditorTabs& tabs() const { return *m_tabs; }
 
     // Opens a vault in the background. `silent` = a failure only returns to the welcome page
     // (used for the automatic re-open at start-up) instead of showing an error message.
@@ -81,6 +85,8 @@ private:
     WelcomePage* m_welcome = nullptr;
     LoadingPage* m_loading = nullptr;
     VaultStatusWidget* m_status = nullptr;
+    EditorTabs* m_tabs = nullptr;
+    EditorStatusWidget* m_editorStatus = nullptr;
 
     QMenu* m_recentMenu = nullptr;
     QMenu* m_themeMenu = nullptr;
@@ -97,6 +103,7 @@ private:
     QAction* m_closeVaultAction = nullptr;
     QAction* m_sidebarAction = nullptr;
     QAction* m_lineNumbersAction = nullptr;
+    QList<QAction*> m_editActions;
 };
 
 } // namespace nexus::ui

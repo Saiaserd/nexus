@@ -14,6 +14,7 @@ class ThemeManager;
 // Developer / documentation command-line options (not user facing):
 //   --theme light|dark|system   override the theme for this run only (not saved)
 //   --vault <folder>            open this vault now
+//   --open <a.md,b.md>          with --vault: open these notes in tabs
 //   --settings <file.ini>       use a separate settings file (see makeSettings)
 //   --size WxH                  resize the main window
 //   --screenshot <file.png>     save a picture of the window and quit
