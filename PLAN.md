@@ -103,14 +103,14 @@ nexus/
 
 ## 6. 開發階段（Milestones）
 
-### M0：專案骨架
-- [ ] CMake + vcpkg + Qt 6 可在 Windows 與 Linux 編譯
-- [ ] CMakePresets：`debug`、`release`、`asan`
-- [ ] 嚴格警告：GCC/Clang `-Wall -Wextra -Wpedantic -Werror`；MSVC `/W4 /WX`
-- [ ] clang-format、clang-tidy 設定
-- [ ] GoogleTest 接好，至少一個測試通過
-- [ ] GitHub Actions 在兩個平台跑建置 + 測試
-- [ ] 空白主視窗可啟動
+### M0：專案骨架（✅ 2026-10-25 完成）
+- [x] CMake + vcpkg + Qt 6 可在 Windows 與 Linux 編譯
+- [x] CMakePresets：`debug`、`release`、`asan`
+- [x] 嚴格警告：GCC/Clang `-Wall -Wextra -Wpedantic -Werror`；MSVC `/W4 /WX`
+- [x] clang-format、clang-tidy 設定
+- [x] GoogleTest 接好，至少一個測試通過
+- [x] GitHub Actions 在兩個平台跑建置 + 測試
+- [x] 空白主視窗可啟動
 
 **完成標準**：兩平台 CI 皆綠燈。
 
