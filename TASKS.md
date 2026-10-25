@@ -165,8 +165,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
   - `vcpkg.json`（`builtin-baseline` 改成近期穩定 release tag 的 commit，於備註寫明 tag 名稱）
   - `README.md`（更新建置說明）
 - **完成標準**：
-  - 刪掉 `%LOCALAPPDATA%
-exus` 與 `build/` 後，在乾淨的 PowerShell 執行 `./scripts/dev.ps1 all debug` 一次成功
+  - 刪掉 `%LOCALAPPDATA%\nexus` 與 `build/` 後，在乾淨的 PowerShell 執行 `./scripts/dev.ps1 all debug` 一次成功
   - 腳本裡不再有任何沒驗證雜湊的二進位下載
   - `debug`、`release`、`asan` 三個 preset 都建置成功
   - 備註列出升級後各套件的實際版本（尤其 tree-sitter）
