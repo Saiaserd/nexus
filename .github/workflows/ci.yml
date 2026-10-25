@@ -147,7 +147,8 @@ jobs:
         run: bash .github/scripts/run-logged.sh "asan build" cmake --build --preset asan
       - name: ASan - test
         env:
-          ASAN_OPTIONS: detect_leaks=1:strict_string_checks=1
+          # LeakSanitizer exists on Linux only (MSVC ASan rejects detect_leaks).
+          ASAN_OPTIONS: ${{ runner.os == 'Linux' && 'detect_leaks=1:strict_string_checks=1' || 'strict_string_checks=1' }}
         run: bash .github/scripts/run-logged.sh "asan test" ctest --preset asan
 
       - name: clang-tidy - configure
