@@ -51,3 +51,12 @@ cmake --preset debug && cmake --build --preset debug && ctest --preset debug
 
 clang-tidy 預設關閉（`-DNEXUS_ENABLE_CLANG_TIDY=OFF`），規則與排除理由見 `.clang-tidy`。
 Windows 使用 VS 內建的 `VC\Tools\Llvm\x64\bin`（32 位元的 `Llvm\bin\clang-tidy.exe` 會當機）。
+
+## CI（GitHub Actions）
+
+`.github/workflows/ci.yml`：每次 push / PR 觸發，同分支新 push 會取消舊 run。
+
+- `format`：以 pip 安裝 `clang-format==18.1.8`（與本機 VS 內建同版）檢查格式。
+- `build` 矩陣：`linux-gcc`、`linux-clang`、`windows-msvc`；每組跑 debug 與 asan 的建置＋測試（含 GUI 煙霧測試 `nexus --quit-after-show`，Linux 用 `QT_QPA_PLATFORM=offscreen`，由 ASan/LSan 涵蓋主視窗）。`linux-clang` 另跑 clang-tidy 18（`tidy` preset，零警告）。
+- Qt：`jurplel/install-qt-action`（含快取）；vcpkg：固定在 `vcpkg.json` 的 `builtin-baseline` commit，binary cache 為 `files` provider + `actions/cache`。
+- 失敗時，`.github/scripts/run-logged.sh` 會把關鍵錯誤行輸出成 `::error::` annotation 並寫入 step summary。

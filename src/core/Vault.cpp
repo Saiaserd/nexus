@@ -71,7 +71,8 @@ Expected<Vault, FileError> Vault::open(const QString& root)
     std::sort(vault.m_folders.begin(), vault.m_folders.end(),
               [](const QString& a, const QString& b) { return pathLess(a, true, b, true); });
 
-    vault.m_known.reserve(static_cast<qsizetype>(vault.m_notes.size() + vault.m_folders.size()));
+    vault.m_known.reserve(static_cast<qsizetype>(vault.m_notes.size()) +
+                          static_cast<qsizetype>(vault.m_folders.size()));
     for (const NoteInfo& note : vault.m_notes) {
         vault.m_known.insert(note.relPath);
     }

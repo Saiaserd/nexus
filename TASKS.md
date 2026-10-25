@@ -113,7 +113,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-005 GitHub Actions CI（Windows + Linux）
 - **負責**：C
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-003、T-004
 - **目標**：每次 push 與 PR 自動建置與測試
 - **檔案**：
@@ -129,6 +129,11 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
     1. Linux 的 clang-format 版本要和本機 VS 內建的 18.1.8 對齊（例如用 apt 的 `clang-format-18`），否則格式檢查會因版本不同而失敗
     2. `cmake/ClangTidy.cmake` 的 `CMAKE_AUTOGEN_ORIGIN_DEPENDS OFF` 並不會略過 moc 產生碼；改成對 autogen 來源設定 `SKIP_LINTING`（CMake ≥ 3.27），或用其他確實有效的方式
     3. GUI 啟動煙霧測試：`nexus --quit-after-show`（或 `QT_QPA_PLATFORM=offscreen`）放進 ctest，Linux 上搭配 ASan/LSan，讓洩漏偵測能涵蓋主視窗
+  - （C）已完成，dev-c 上 CI 全綠（run 40173058620：https://github.com/Saiaserd/nexus/actions/runs/40173058620）。
+    - 架構：`format` job（pip 安裝 `clang-format==18.1.8`，與本機同版）＋ `build` 矩陣 linux-gcc／linux-clang／windows-msvc；每組 debug 與 asan 的建置＋測試；linux-clang 另跑 clang-tidy 18（tidy preset，零警告）。Qt 用 `jurplel/install-qt-action@v4`（cache: true），vcpkg 自行 clone 並釘在 builtin-baseline commit，binary cache 為 `files` provider + `actions/cache`（x-gha 已被 GitHub 汰除）。Windows 用 `ilammy/msvc-dev-cmd`，並在其後覆寫 `VCPKG_ROOT`、移除 Git 的 `link.exe`。permissions: contents: read、concurrency 取消舊 run。失敗時 `.github/scripts/run-logged.sh` 輸出 `::error::` annotation 與 step summary。
+    - PM 追加三點：(1) clang-format 版本對齊 18.1.8；(2) `cmake/ClangTidy.cmake` 改在 build 根目錄產生極簡 `.clang-tidy`（Checks 實質關閉），使 autogen／moc 產生碼不被 lint（不需 CMake 3.27）；(3) `nexus --quit-after-show` 加進 ctest（`nexus_gui_smoke`，非 Windows 設 `QT_QPA_PLATFORM=offscreen`），Linux ASan job 以 `detect_leaks=1` 涵蓋主視窗，已通過。
+    - 發現並修正：新版 MSVC STL 在 ASan 下需 `_DISABLE_OPTIONAL_ANNOTATION`（`cmake/Sanitizers.cmake`），否則 gtest 連結出現 LNK2038。Linux 上 src/ 程式碼無需任何修改。
+    - 風險：Node.js 20 action 棄用警告（actions 仍可用）；`ubuntu-latest` 即將遷移到 Ubuntu 26，clang-18／clang-tidy-18 套件屆時可能需調整。
 
 ---
 

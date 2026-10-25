@@ -40,7 +40,8 @@ function(nexus_enable_sanitizers target)
     # overflows are still caught).
     target_compile_definitions(${target} PRIVATE
       _DISABLE_VECTOR_ANNOTATION
-      _DISABLE_STRING_ANNOTATION)
+      _DISABLE_STRING_ANNOTATION
+      _DISABLE_OPTIONAL_ANNOTATION)  # newer MSVC STL (CI runner); gtest uses std::optional
     # The dynamic ASan runtime ships next to cl.exe (and is on PATH inside a
     # VS developer prompt). Copy it beside executables so they also run from
     # Explorer / ctest without relying on PATH. The debug CRT (/MDd) uses the
