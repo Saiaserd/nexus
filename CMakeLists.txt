@@ -28,6 +28,7 @@ find_package(Qt6 6.8 REQUIRED COMPONENTS Core Widgets)
 include(NexusQtDeploy)
 include(CompilerWarnings)
 include(Sanitizers)
+include(ClangTidy)
 
 enable_testing()
 

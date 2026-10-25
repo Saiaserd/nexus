@@ -10,12 +10,17 @@
   ./scripts/dev.ps1 all asan        # configure + build + test
   ./scripts/dev.ps1 clean debug     # delete build/<preset>
   ./scripts/dev.ps1 shell           # print resolved environment
+  ./scripts/dev.ps1 format          # clang-format -i on all C++ sources
+  ./scripts/dev.ps1 format-check    # fail if any C++ source is not formatted
+  ./scripts/dev.ps1 configure tidy  # preset with clang-tidy enabled (zero warnings required)
 
 .NOTES
   Overridable environment variables (set before calling):
     NEXUS_VS_ROOT  VS 2022 install dir (default: found via vswhere)
     VCPKG_ROOT     vcpkg dir          (default: clone managed in %LOCALAPPDATA%/nexus/vcpkg,
                                        pinned to the builtin-baseline in vcpkg.json)
+    NEXUS_LLVM_BIN LLVM tools dir     (default: <VS>/VC/Tools/Llvm/x64/bin; the 32-bit one
+                                       in .../Llvm/bin crashes clang-tidy)
     QT_ROOT        Qt kit dir         (default: C:\Qt\6.8.3\msvc2022_64)
   Extra arguments after the preset are passed through to the underlying tool,
   e.g. ./scripts/dev.ps1 test debug -R Smoke
@@ -23,7 +28,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet('configure', 'build', 'test', 'all', 'clean', 'shell')]
+    [ValidateSet('configure', 'build', 'test', 'all', 'clean', 'shell', 'format', 'format-check')]
     [string]$Command,
 
     [Parameter(Position = 1)]
@@ -118,6 +123,7 @@ Import-VsEnvironment $vsRoot
 
 Initialize-Vcpkg $callerVcpkgRoot $vsRoot
 if (-not $env:QT_ROOT) { $env:QT_ROOT = 'C:\Qt\6.8.3\msvc2022_64' }
+if (-not $env:NEXUS_LLVM_BIN) { $env:NEXUS_LLVM_BIN = Join-Path $vsRoot 'VC/Tools/Llvm/x64/bin' }
 if (-not $env:VCPKG_DISABLE_METRICS) { $env:VCPKG_DISABLE_METRICS = '1' }
 
 if (-not (Test-Path (Join-Path $env:VCPKG_ROOT 'scripts\buildsystems\vcpkg.cmake'))) {
@@ -137,6 +143,15 @@ function Invoke-Native([string]$exe, [string[]]$arguments) {
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
+function Invoke-ClangFormat([bool]$checkOnly) {
+    $cf = Join-Path $env:NEXUS_LLVM_BIN 'clang-format.exe'
+    if (-not (Test-Path $cf)) { throw "clang-format not found: $cf" }
+    $files = & git ls-files '*.cpp' '*.h' '*.hpp' '*.cc'
+    if (-not $files) { return }
+    if ($checkOnly) { Invoke-Native $cf (@('--dry-run', '-Werror') + $files) }
+    else { Invoke-Native $cf (@('-i') + $files) }
+}
+
 Push-Location $repoRoot
 try {
     switch ($Command) {
@@ -148,6 +163,8 @@ try {
             Write-Host "cmake      = $((Get-Command cmake.exe).Source)"
             Write-Host "ninja      = $((Get-Command ninja.exe).Source)"
         }
+        'format' { Invoke-ClangFormat $false }
+        'format-check' { Invoke-ClangFormat $true }
         'configure' { Invoke-Native 'cmake' (@('--preset', $Preset) + $Rest) }
         'build' { Invoke-Native 'cmake' (@('--build', '--preset', $Preset) + $Rest) }
         'test' { Invoke-Native 'ctest' (@('--preset', $Preset) + $Rest) }

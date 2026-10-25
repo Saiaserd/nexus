@@ -1,6 +1,7 @@
 #include "core/NumberParser.h"
 
 #include <charconv>
+#include <memory>
 #include <system_error>
 
 namespace nexus::core {
@@ -13,7 +14,7 @@ Expected<int, ParseError> parsePositiveInt(std::string_view text)
 
     int value = 0;
     const char* const first = text.data();
-    const char* const last = first + text.size();
+    const char* const last = std::to_address(text.end());
     const auto [ptr, ec] = std::from_chars(first, last, value);
 
     if (ec == std::errc::result_out_of_range) {

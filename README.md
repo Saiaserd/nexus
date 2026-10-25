@@ -40,3 +40,14 @@ cmake --preset debug && cmake --build --preset debug && ctest --preset debug
 - `asan`：Linux 為 ASan + UBSan；Windows 為 MSVC `/fsanitize=address`（已關閉 `/RTC*` 與增量連結，
   執行階段 DLL `clang_rt.asan_*.dll` 會在建置後複製到執行檔旁，見 `cmake/Sanitizers.cmake`）。
   `./scripts/dev.ps1 all asan`
+
+## 格式與靜態分析
+
+```powershell
+./scripts/dev.ps1 format            # clang-format -i（.clang-format：LLVM 為底、4 空格、行寬 100）
+./scripts/dev.ps1 format-check      # 有任何檔案未格式化就失敗（CI 用）
+./scripts/dev.ps1 all tidy          # 開啟 clang-tidy 的建置（NEXUS_ENABLE_CLANG_TIDY=ON，須零警告）
+```
+
+clang-tidy 預設關閉（`-DNEXUS_ENABLE_CLANG_TIDY=OFF`），規則與排除理由見 `.clang-tidy`。
+Windows 使用 VS 內建的 `VC\Tools\Llvm\x64\bin`（32 位元的 `Llvm\bin\clang-tidy.exe` 會當機）。

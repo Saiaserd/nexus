@@ -70,7 +70,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-003 clang-format 與 clang-tidy
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-002
 - **目標**：統一程式風格並啟用靜態分析
 - **檔案**：
@@ -80,7 +80,13 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 - **完成標準**：
   - 現有程式碼通過 clang-format 檢查
   - 開啟 clang-tidy 建置時零警告
-- **備註**：
+- **備註**：（A）已完成。
+  - 新增：`.clang-format`（LLVM 為底、4 空格、行寬 100，函式大括號換行、其餘附著）、`.clang-tidy`（bugprone/modernize/performance/cppcoreguidelines；每條排除規則都在檔內註解理由；`WarningsAsErrors: '*'`；`HeaderFilterRegex` 只報我們 `src/`、`tests/` 的標頭）、`cmake/ClangTidy.cmake`（選項 `NEXUS_ENABLE_CLANG_TIDY`，預設 OFF；moc 產生碼不被檢查）。另加 `tidy` preset（configure/build/test，Debug + clang-tidy）以及 `dev.ps1` 子命令 `format`、`format-check`（皆用 git ls-files 取得 C++ 檔）。根 CMakeLists include `ClangTidy`；README 補充用法。CMakePresets.json 因用腳本重寫而整檔重排縮排（內容只多 `tidy`）。
+  - 驗證：`format-check` 通過（故意放入未格式化檔案時會失敗並回傳非零，已移除）；`./scripts/dev.ps1 all tidy` 零警告、4 個測試通過；tidy 實際檢查 main.cpp、NumberParser.cpp、MainWindow.cpp、SmokeTest.cpp 四個來源。debug/release/asan 重新 `all` 皆 exit 0、4 測試過。
+  - **踩到的坑**：VS 的 `Llvm\bin\clang-tidy.exe` 是 32 位元版，分析時直接 access violation 當機；必須用 `Llvm\x64\bin`。`dev.ps1` 預設 `NEXUS_LLVM_BIN` 指到 x64 路徑，CMake 的 find_program 也優先找該目錄。
+  - 首次執行 tidy 抓到的兩個真問題已修正：`enum class ParseError` 改為 `: std::uint8_t`（performance-enum-size）；NumberParser.cpp 的指標運算改用 `std::to_address(text.end())`（pro-bounds-pointer-arithmetic）。
+  - 只有排除清單內的規則被關閉（trailing-return-type、owning-memory、C 陣列、easily-swappable-parameters、magic-numbers、vararg、macro-usage、non-const-global），未使用任何 NOLINT。
+  - clang-format 版本 18.1.8（VS 內建）；CI 的 Linux clang-format 版本須相近，否則格式可能有細微差異（T-005 需注意）。Linux 尚未驗證。
 
 ---
 

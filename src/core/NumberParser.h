@@ -1,12 +1,13 @@
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 
 #include "core/Expected.h"
 
 namespace nexus::core {
 
-enum class ParseError {
+enum class ParseError : std::uint8_t {
     Empty,
     NotANumber,
     OutOfRange,
