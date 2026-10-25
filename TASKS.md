@@ -161,3 +161,109 @@ exus` 與 `build/` 後，在乾淨的 PowerShell 執行 `./scripts/dev.ps1 all d
 - [ ] PLAN.md 中 M0 項目打勾
 - [ ] 拆出 M1 任務卡
 - [ ] M1 的 UI 畫面（檔案樹、編輯器）設計稿經作者確認
+
+---
+---
+
+## 下一個 Milestone：M1 Vault 與筆記
+
+> M0 合併後開工。M1 仍由 **開發 A** 負責（WORKFLOW：M0、M1 只開 A）。
+> 開工前必讀：ADR 0004（核心層路徑與檔案 I/O）。
+> 順序：T-101 → T-102 → T-104 → T-103 →（設計稿確認後）T-110 → T-111 → T-112 → T-113 → T-114。
+> UI 卡依 CLAUDE.md 規定，要等作者確認設計稿（待決事項 D-01）才能開工。設計稿：https://claude.ai/artifact/TvyTEzBXdyibRPPXrfGSiH
+
+### T-101 Vault 開啟與掃描（核心）
+- **負責**：A
+- **狀態**：待辦
+- **依賴**：M0
+- **目標**：把一個資料夾開啟為 vault，取得所有筆記與資料夾的結構
+- **檔案**：
+  - `src/core/FileError.h`（錯誤列舉 + 路徑，ADR 0004）
+  - `src/core/Vault.h/.cpp`（`static Expected<Vault, FileError> open(const QString& root)`；`root()`、`notes()`、`folders()`、`absolutePath(rel)`、`contains(rel)`）
+  - `src/core/NoteInfo.h`（相對路徑、檔案大小、修改時間）
+  - `tests/core/VaultTest.cpp`
+- **完成標準**：
+  - 遞迴找出所有 `.md`（副檔名不分大小寫）；空資料夾也要列出（UI 要顯示）
+  - 略過以 `.` 開頭的資料夾與檔案（`.git`、`.nexus`、`.obsidian`…）；不跟隨指向資料夾的符號連結（避免迴圈）
+  - 根目錄不存在、不是資料夾、無法讀取時，回傳對應的錯誤
+  - 結果依路徑排序（資料夾在前、同層依名稱的自然排序，例如「筆記2」排在「筆記10」前面），排序規則寫成獨立函式並測試
+  - 測試用 `QTemporaryDir` 建立 fixture，包含中文檔名、空格、巢狀資料夾和隱藏資料夾
+  - 效能測試：產生 10,000 篇筆記，`Vault::open` 在 release 下 < 1 秒（測試加上 `perf` label，ctest 預設照跑；asan 下只檢查正確性、不檢查時間）
+- **備註**：
+
+---
+
+### T-102 筆記檔案操作（核心）
+- **負責**：A
+- **狀態**：待辦
+- **依賴**：T-101
+- **目標**：讀、寫、新增、重新命名、刪除筆記與資料夾
+- **檔案**：
+  - `src/core/NoteDocument.h/.cpp`（`text`（`\n` 換行）、原始換行種類、有沒有 BOM）
+  - `src/core/NoteFiles.h/.cpp`（以下函式都以 vault 根目錄 + 相對路徑操作）
+    - `read(rel) -> Expected<NoteDocument, FileError>`
+    - `write(rel, const NoteDocument&) -> Expected<void, FileError>`（QSaveFile）
+    - `createNote(folderRel, baseName = "未命名") -> Expected<QString /*新的 rel*/, FileError>`（名稱重複時自動加「 1」「 2」…）
+    - `createFolder(parentRel, name)`
+    - `rename(rel, newBaseName) -> Expected<QString, FileError>`（筆記與資料夾都適用；筆記自動保留 `.md`）
+    - `moveToTrash(rel)`
+    - `validateName(name) -> std::optional<NameError>`（UI 的原地改名也要用這個做即時檢查）
+  - `tests/core/NoteFilesTest.cpp`
+- **完成標準**：
+  - 讀寫都要保留原本的 CRLF/LF 與 BOM（寫回後與原檔逐 byte 相同）
+  - 不是合法 UTF-8 的檔案回傳 `InvalidEncoding`，不能默默把內容弄壞
+  - 名稱檢查包含：空字串、`\ / : * ? " < > |`、控制字元、結尾是空白或 `.`、Windows 保留名（CON、PRN、AUX、NUL、COM1–9、LPT1–9，不分大小寫，含副檔名的情況）、長度上限
+  - 名稱衝突判斷在 Windows 與 macOS 不分大小寫，Linux 分大小寫；只改大小寫（`a.md` → `A.md`）要能成功
+  - 每個錯誤情境都有測試
+- **備註**：
+
+---
+
+### T-104 Markdown 行內標記解析（給語法高亮用）
+- **負責**：A
+- **狀態**：待辦
+- **依賴**：M0
+- **目標**：逐行把 Markdown 切成帶種類的區段，給 UI 的 `QSyntaxHighlighter` 上色（對照設計稿中編輯器的上色規則）
+- **檔案**：
+  - `src/parser/CMakeLists.txt`（新的 `nexus_parser` 函式庫，只連 QtCore）
+  - `src/parser/MarkdownLexer.h/.cpp`：`LineResult lexLine(QStringView line, LexState prev)`，回傳 `std::vector<Span{int start; int length; SpanKind kind;}>` 和下一行的 `LexState`
+  - `tests/parser/MarkdownLexerTest.cpp`
+- **SpanKind**：`HeadingMarker`、`HeadingText`（含層級 1–6）、`ListMarker`（`-`、`*`、`+`、`1.`、任務 `- [ ]`/`- [x]`）、`QuoteMarker`、`StrongMarker`/`StrongText`、`EmphasisMarker`/`EmphasisText`、`InlineCode`、`FenceDelimiter`（含語言標籤）、`CodeBlockText`、`WikiLinkBracket`、`WikiLinkTarget`（`[[目標]]`、`[[目標|別名]]`、`[[目標#標題]]`）、`Tag`、`LinkText`/`LinkUrl`（`[文字](網址)`）、`HorizontalRule`
+- **完成標準**：
+  - 以 ``` 或 ~~~ 開頭的程式碼區塊跨行狀態正確（結束符號要同字元、長度不短於開頭）；區塊內不解析任何行內標記
+  - 行內程式碼內不解析連結、標籤、粗體
+  - 標籤規則：`#` 後接非空白；前一個字元不能是英數字（`a#b` 不算）；純數字不算（`#123`）；`#` 後面是空白則是標題或一般文字；中文標籤（`#規格`）要支援
+  - 位置以 UTF-16 code unit 計算；測試要涵蓋中文和 emoji（代理對）
+  - 至少 40 個測試案例；另用 1 萬行的混合文字做效能測試，release 下 < 50ms
+  - 這不是完整的 CommonMark 解析器（M2 的連結索引用 md4c）；只求高亮正確，邊界情況照 Obsidian 的直覺行為
+- **備註**：
+
+---
+
+### T-103 Vault 檔案監看（核心）
+- **負責**：A
+- **狀態**：待辦
+- **依賴**：T-102
+- **目標**：外部新增、修改、刪除、改名筆記時發出 signal；Nexus 自己存檔造成的變動不算
+- **檔案**：
+  - `src/core/VaultWatcher.h/.cpp`（`QObject`；以 `QFileSystemWatcher` 監看所有資料夾，加上 debounce；signal：`notesAdded(QStringList)`、`notesRemoved(QStringList)`、`notesModified(QStringList)`、`foldersChanged()`）
+  - `NoteFiles` 寫檔後通知 watcher 忽略這次變動（例如登記「預期的 mtime 與大小」或內容雜湊）。若要改 NoteFiles 的介面，在備註說明
+  - `tests/core/VaultWatcherTest.cpp`（`QSignalSpy`；測試執行檔需要 `QCoreApplication`）
+- **完成標準**：
+  - debounce 預設 150ms，同一批變動合成一次 signal
+  - 外部新增、修改、刪除筆記，以及在外部新增資料夾後再於裡面新增筆記，都能正確偵測
+  - Nexus 自己 `write` 的檔案不會觸發 `notesModified`
+  - 改名在 signal 層呈現為「一個 removed 加一個 added」即可（UI 自行配對）
+  - 測試不能不穩定（不靠固定 sleep；用 `QSignalSpy::wait` 並設上限）。連續跑 20 次都要通過（`ctest --repeat until-fail:20 -R VaultWatcher`）
+  - 監看本身不能卡住 UI 執行緒（重新掃描放到 `QtConcurrent`）
+- **備註**：
+
+---
+
+### T-110～T-114 UI（阻塞：等設計稿確認，見待決事項 D-01）
+- **T-110 主題系統**：依設計稿兩套色票，建立 `src/ui/Theme`（QPalette + QSS）；選單「檢視 › 主題」可切換淺色／深色／跟隨系統，用 `QSettings` 記住
+- **T-111 歡迎畫面與開啟 vault**：歡迎畫面、最近開啟清單（找不到的資料夾要標示）、開啟／建立 vault；`Vault::open` 用 `QtConcurrent` 在背景執行
+- **T-112 檔案樹**：`QAbstractItemModel` 包裝 Vault、不顯示 `.md`、右鍵選單、F2 原地改名（用 `validateName` 即時提示）、刪除確認對話框
+- **T-113 編輯器與分頁**：`QPlainTextEdit` + 行號 + 目前行底色 + 用 T-104 上色；分頁（未儲存圓點）、Ctrl+S、麵包屑、狀態列（行／欄、字數、換行種類）
+- **T-114 外部修改處理**：接上 VaultWatcher；沒有未儲存變更就自動重新載入並在狀態列提示；有未儲存變更就顯示衝突列；檔案被刪除時，分頁顯示刪除線
+- 詳細檔案清單與完成標準：設計稿確認後再補
