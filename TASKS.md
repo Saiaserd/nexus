@@ -70,7 +70,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-003 clang-format 與 clang-tidy
 - **負責**：A
-- **狀態**：待審核
+- **狀態**：已完成
 - **依賴**：T-002
 - **目標**：統一程式風格並啟用靜態分析
 - **檔案**：
@@ -92,7 +92,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-004 接入 GoogleTest
 - **負責**：A
-- **狀態**：待審核
+- **狀態**：已完成
 - **依賴**：T-002
 - **目標**：建立測試框架與第一個測試
 - **檔案**：
@@ -124,13 +124,17 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
   - 每個平台跑：debug 建置 + 測試、asan 建置 + 測試
   - Linux 其中一組開啟 clang-tidy 與 clang-format 檢查
   - 啟用 vcpkg binary cache 縮短建置時間
-- **備註**：（PM）需要作者先建立 GitHub repo 並設定 remote；在那之前此卡只能寫好 yml、無法驗證綠燈。
+- **備註**：（PM）GitHub remote 已設定：https://github.com/Saiaserd/nexus（public），PM 負責 push 與查看結果。
+  - （PM，審核 T-003/T-004 時追加）一併處理：
+    1. Linux 的 clang-format 版本要和本機 VS 內建的 18.1.8 對齊（例如用 apt 的 `clang-format-18`），否則格式檢查會因版本不同而失敗
+    2. `cmake/ClangTidy.cmake` 的 `CMAKE_AUTOGEN_ORIGIN_DEPENDS OFF` 並不會略過 moc 產生碼；改成對 autogen 來源設定 `SKIP_LINTING`（CMake ≥ 3.27），或用其他確實有效的方式
+    3. GUI 啟動煙霧測試：`nexus --quit-after-show`（或 `QT_QPA_PLATFORM=offscreen`）放進 ctest，Linux 上搭配 ASan/LSan，讓洩漏偵測能涵蓋主視窗
 
 ---
 
 ### T-006 空白主視窗
 - **負責**：A
-- **狀態**：待審核
+- **狀態**：已完成
 - **依賴**：T-001
 - **目標**：啟動後顯示 Nexus 主視窗
 - **檔案**：
@@ -153,7 +157,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-007 改用獨立 vcpkg，移除自行下載 pkgconf
 - **負責**：A
-- **狀態**：待審核
+- **狀態**：已完成
 - **依賴**：T-002
 - **目標**：依 ADR 0003，以釘死版本的獨立 vcpkg 取代 VS 內建 vcpkg
 - **檔案**：
