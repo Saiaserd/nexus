@@ -99,10 +99,8 @@ void MainWindow::buildMenus()
     m_recentMenu = fileMenu->addMenu(tr("最近開啟"));
     connect(m_recentMenu, &QMenu::aboutToShow, this, &MainWindow::refreshRecentMenu);
     fileMenu->addSeparator();
-    // New note needs the file tree (T-112) and stays disabled until then.
     m_newNoteAction = fileMenu->addAction(tr("新增筆記"));
     m_newNoteAction->setShortcut(QKeySequence::New);
-    m_newNoteAction->setEnabled(false);
     m_saveAction = fileMenu->addAction(tr("儲存"), QKeySequence::Save, this,
                                        [this] { m_tabs->saveCurrent(); });
     m_closeTabAction = fileMenu->addAction(tr("關閉分頁"), QKeySequence::Close, this,
@@ -199,6 +197,16 @@ void MainWindow::buildContent()
         refreshTitle();
         refreshActions();
     });
+    // File tree <-> editor.
+    connect(m_sidebar, &VaultSidebar::openNoteRequested, m_tabs, &EditorTabs::openNote);
+    connect(m_sidebar, &VaultSidebar::noteRenamed, m_tabs, &EditorTabs::renameNote);
+    connect(m_sidebar, &VaultSidebar::noteRemoved, m_tabs, &EditorTabs::removeNote);
+    connect(m_tabs, &EditorTabs::dirtyChanged, m_sidebar, &VaultSidebar::setNoteDirty);
+    connect(m_tabs, &EditorTabs::currentChanged, this, [this] {
+        if (const NoteSession* note = m_tabs->currentSession()) {
+            m_sidebar->selectNote(note->relPath());
+        }
+    });
     connect(m_tabs, &EditorTabs::saveFailed, this,
             [this](const QString& relPath, const QString& message) {
                 statusBar()->showMessage(QStringLiteral("%1：%2").arg(relPath, message), 8000);
@@ -265,6 +273,7 @@ void MainWindow::refreshThemeChecks()
 void MainWindow::refreshActions()
 {
     m_closeVaultAction->setEnabled(m_session.state() != VaultSession::State::Closed);
+    m_newNoteAction->setEnabled(m_session.isOpen());
     const bool idle = m_session.state() != VaultSession::State::Opening;
     m_openAction->setEnabled(idle);
     m_createAction->setEnabled(idle);
