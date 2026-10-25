@@ -6,9 +6,11 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QPixmap>
+#include <QSettings>
 #include <QTimer>
 #include <QWidget>
 
+#include "ui/MainWindow.h"
 #include "ui/ThemeManager.h"
 
 namespace nexus::ui {
@@ -52,7 +54,7 @@ QMenu* findMenu(QMainWindow& window, const QString& path)
 
 } // namespace
 
-void applyDeveloperOptions(const QStringList& args, ThemeManager& theme, QWidget& window)
+bool applyDeveloperOptions(const QStringList& args, ThemeManager& theme, MainWindow& window)
 {
     const QString themeName = valueOf(args, QStringLiteral("--theme"));
     if (!themeName.isEmpty()) {
@@ -64,23 +66,27 @@ void applyDeveloperOptions(const QStringList& args, ThemeManager& theme, QWidget
         window.resize(size.at(0).toInt(), size.at(1).toInt());
     }
 
+    const QString vault = valueOf(args, QStringLiteral("--vault"));
+    const bool opened = !vault.isEmpty();
+    if (opened) {
+        window.openVault(vault);
+    }
+
     const QString menuPath = valueOf(args, QStringLiteral("--menu"));
     const QString menuShot = valueOf(args, QStringLiteral("--menu-screenshot"));
     if (!menuPath.isEmpty() && !menuShot.isEmpty()) {
-        if (auto* mainWindow = qobject_cast<QMainWindow*>(&window)) {
-            QTimer::singleShot(500, &window, [mainWindow, menuPath, menuShot] {
-                QMenu* menu = findMenu(*mainWindow, menuPath);
-                if (menu == nullptr) {
-                    QApplication::exit(2);
-                    return;
-                }
-                menu->popup(mainWindow->mapToGlobal(QPoint(40, 60)));
-                QTimer::singleShot(500, menu, [menu, menuShot] {
-                    QApplication::exit(menu->grab().save(menuShot) ? 0 : 1);
-                });
+        QTimer::singleShot(800, &window, [&window, menuPath, menuShot] {
+            QMenu* menu = findMenu(window, menuPath);
+            if (menu == nullptr) {
+                QApplication::exit(2);
+                return;
+            }
+            menu->popup(window.mapToGlobal(QPoint(40, 60)));
+            QTimer::singleShot(500, menu, [menu, menuShot] {
+                QApplication::exit(menu->grab().save(menuShot) ? 0 : 1);
             });
-        }
-        return;
+        });
+        return opened;
     }
 
     const QString shot = valueOf(args, QStringLiteral("--screenshot"));
@@ -91,6 +97,16 @@ void applyDeveloperOptions(const QStringList& args, ThemeManager& theme, QWidget
             QApplication::exit(saved ? 0 : 1);
         });
     }
+    return opened;
+}
+
+std::unique_ptr<QSettings> makeSettings(const QStringList& args)
+{
+    const QString file = valueOf(args, QStringLiteral("--settings"));
+    if (file.isEmpty()) {
+        return std::make_unique<QSettings>();
+    }
+    return std::make_unique<QSettings>(file, QSettings::IniFormat);
 }
 
 } // namespace nexus::ui

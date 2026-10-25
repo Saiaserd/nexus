@@ -2,20 +2,38 @@
 find_package(Qt6 6.8 REQUIRED COMPONENTS Svg)
 
 add_library(nexus_ui STATIC
+  ClickableFrame.h
+  ClickableFrame.cpp
   CrashDialogs.h
   CrashDialogs.cpp
+  ElidedLabel.h
+  ElidedLabel.cpp
   Fonts.h
   Fonts.cpp
   Icons.h
   Icons.cpp
+  LoadingPage.h
+  LoadingPage.cpp
   MainWindow.h
   MainWindow.cpp
   DevOptions.h
   DevOptions.cpp
+  RecentVaults.h
+  RecentVaults.cpp
   Theme.h
   Theme.cpp
   ThemeManager.h
-  ThemeManager.cpp)
+  ThemeManager.cpp
+  UiText.h
+  UiText.cpp
+  VaultSession.h
+  VaultSession.cpp
+  VaultSidebar.h
+  VaultSidebar.cpp
+  VaultStatusWidget.h
+  VaultStatusWidget.cpp
+  WelcomePage.h
+  WelcomePage.cpp)
 
 # Resources of a static library: qt_add_resources keeps them linked into the final executable.
 qt_add_resources(nexus_ui nexus_ui_resources
@@ -39,10 +57,12 @@ qt_add_resources(nexus_ui nexus_ui_resources
     resources/icons/folder-plus.svg
     resources/icons/folder.svg
     resources/icons/logo.svg
+    resources/icons/logo-large.svg
     resources/icons/refresh.svg)
 
 target_include_directories(nexus_ui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
-target_link_libraries(nexus_ui PUBLIC Qt6::Widgets Qt6::Svg)
+target_link_libraries(nexus_ui PUBLIC nexus_core Qt6::Widgets Qt6::Svg)
+target_compile_definitions(nexus_ui PRIVATE NEXUS_VERSION="${PROJECT_VERSION}")
 
 nexus_set_warnings(nexus_ui)
 nexus_enable_sanitizers(nexus_ui)

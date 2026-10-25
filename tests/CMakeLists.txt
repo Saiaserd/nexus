@@ -48,10 +48,14 @@ endif()
 # UI tests (Widgets, offscreen platform; own main() creates the QApplication).
 add_executable(nexus_ui_tests
   ui/UiTestMain.cpp
-  ui/ThemeTest.cpp)
+  ui/ThemeTest.cpp
+  ui/RecentVaultsTest.cpp
+  ui/VaultSessionTest.cpp
+  ui/WelcomePageTest.cpp
+  ui/MainWindowTest.cpp)
 
 target_compile_definitions(nexus_ui_tests PRIVATE NEXUS_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
-target_link_libraries(nexus_ui_tests PRIVATE nexus_ui GTest::gtest)
+target_link_libraries(nexus_ui_tests PRIVATE nexus_ui Qt6::Test GTest::gtest)
 
 nexus_set_warnings(nexus_ui_tests)
 nexus_enable_sanitizers(nexus_ui_tests)

@@ -86,7 +86,7 @@ Palette makeDark()
 
     p.card = hex("#1A221C");
     p.onAccent = hex("#0B1A10");
-    p.onAccentMuted = hex("#1D4B2D");
+    p.onAccentMuted = hex("#173F25");
     p.accentHover = hex("#7BCB93");
     p.hover = hex("#222C25");
     p.bodyText = hex("#C3CFC4");

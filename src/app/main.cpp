@@ -20,11 +20,14 @@ int main(int argc, char* argv[])
     const bool quitAfterShow =
         QCoreApplication::arguments().contains(QStringLiteral("--quit-after-show"));
 
-    QSettings settings;
-    nexus::ui::ThemeManager theme(settings);
-    nexus::ui::MainWindow window(theme);
+    const auto settings = nexus::ui::makeSettings(QApplication::arguments());
+    nexus::ui::ThemeManager theme(*settings);
+    nexus::ui::MainWindow window(theme, *settings);
     window.show();
-    nexus::ui::applyDeveloperOptions(QApplication::arguments(), theme, window);
+    if (!nexus::ui::applyDeveloperOptions(QApplication::arguments(), theme, window) &&
+        !quitAfterShow) {
+        window.restoreLastVault();
+    }
 
     if (quitAfterShow) {
         QTimer::singleShot(0, QCoreApplication::instance(), &QCoreApplication::quit);

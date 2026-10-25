@@ -285,3 +285,176 @@ QCheckBox::indicator:checked {
     border: 1px solid @accent@;
     image: url(:/ui/icons/@checkImage@);
 }
+
+/* ---- welcome page (Welcome.dc.html) --------------------------------------------------- */
+QWidget#welcomePage,
+QScrollArea#welcomeScroll,
+QWidget#welcomeContent,
+QWidget#loadingPage {
+    background: @bg@;
+}
+
+QLabel#welcomeTitle {
+    font-size: 28px;
+    font-weight: 700;
+}
+
+QLabel#welcomeTagline {
+    font-size: 14px;
+    color: @muted@;
+}
+
+QFrame#card {
+    border: 1px solid @border@;
+    border-radius: 10px;
+    background: @card@;
+}
+
+QFrame#card:hover {
+    background: @hover@;
+}
+
+QFrame#card:focus {
+    border: 1px solid @accent@;
+}
+
+QFrame#card[variant="primary"] {
+    border: 1px solid @accent@;
+    background: @accent@;
+}
+
+QFrame#card[variant="primary"]:hover {
+    border: 1px solid @accentHover@;
+    background: @accentHover@;
+}
+
+QFrame#card:disabled {
+    background: @card@;
+}
+
+QFrame#card[variant="primary"]:disabled {
+    background: @accent@;
+}
+
+QLabel#cardTitle {
+    font-size: 15px;
+    font-weight: 700;
+    color: @text@;
+}
+
+QLabel#cardSub {
+    font-size: 12px;
+    color: @muted@;
+}
+
+QFrame#card[variant="primary"] QLabel#cardTitle {
+    color: @onAccent@;
+}
+
+QFrame#card[variant="primary"] QLabel#cardSub {
+    color: @onAccentMuted@;
+}
+
+QLabel#sectionTitle {
+    font-size: 12px;
+    font-weight: bold;
+    color: @muted@;
+}
+
+QFrame#recentList {
+    border: 1px solid @border@;
+    border-radius: 10px;
+    background: @card@;
+}
+
+QFrame#recentRow {
+    border: none;
+    background: transparent;
+}
+
+QFrame#recentRow[separated="true"] {
+    border-top: 1px solid @borderSoft@;
+}
+
+QFrame#recentRow:hover {
+    background: @hover@;
+}
+
+QFrame#recentRow[missing="true"]:hover {
+    background: transparent;
+}
+
+QFrame#recentRow[pos="first"],
+QFrame#recentRow[pos="only"] {
+    border-top-left-radius: 9px;
+    border-top-right-radius: 9px;
+}
+
+QFrame#recentRow[pos="last"],
+QFrame#recentRow[pos="only"] {
+    border-bottom-left-radius: 9px;
+    border-bottom-right-radius: 9px;
+}
+
+QLabel#recentName {
+    font-weight: 500;
+    color: @text@;
+}
+
+QLabel#recentPath,
+QLabel#recentTime {
+    color: @muted@;
+}
+
+QLabel#recentTime {
+    font-size: 12px;
+}
+
+QLabel#recentMissing {
+    font-size: 12px;
+    color: @danger@;
+}
+
+QLabel#welcomeFooter {
+    font-size: 12px;
+    color: @muted@;
+}
+
+/* ---- loading and workspace pages ------------------------------------------------------- */
+QLabel#loadingMessage {
+    font-size: 14px;
+    color: @muted@;
+}
+
+QFrame#workspace {
+    background: @surface@;
+    border: none;
+}
+
+QLabel#workspaceHint {
+    font-size: 14px;
+    color: @muted@;
+}
+
+/* ---- sidebar (Main.dc.html aside) ------------------------------------------------------ */
+QFrame#sidebar {
+    background: @panel@;
+    border: none;
+}
+
+QFrame#sidebarHeader {
+    border: none;
+    border-bottom: 1px solid @border@;
+    background: transparent;
+}
+
+QLabel#sidebarTitle {
+    font-weight: 700;
+    color: @text@;
+}
+
+QLabel#sidebarSummary {
+    padding-top: 18px;
+    font-size: 12px;
+    color: @muted@;
+}
