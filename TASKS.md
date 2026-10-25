@@ -86,7 +86,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-004 接入 GoogleTest
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-002
 - **目標**：建立測試框架與第一個測試
 - **檔案**：
@@ -97,7 +97,11 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 - **完成標準**：
   - `ctest --preset debug` 與 `ctest --preset asan` 皆通過
   - `src/core` 為獨立 library 目標，不連結 Qt Widgets
-- **備註**：
+- **備註**：（A）已完成。`debug`、`release`、`asan` 的 `./scripts/dev.ps1 all <preset>` 皆 exit 0，4 個測試全過。
+  - 新增：`src/core/`（`Expected.h`、`NumberParser.h/.cpp`、`CMakeLists.txt`，靜態庫 `nexus_core`，PUBLIC include 目錄為 `src/`，所以以 `#include "core/Expected.h"` 引用；目前完全不連結 Qt）、`tests/CMakeLists.txt`、`tests/core/SmokeTest.cpp`（測 `parsePositiveInt` 回傳 `nexus::Expected<int, ParseError>` 的成功與三種錯誤）。根 `CMakeLists.txt` 加入 `enable_testing()` 與 `add_subdirectory(src/core|tests)`。
+  - 測試執行檔呼叫 `nexus_set_warnings`、`nexus_enable_sanitizers`，以 `gtest_discover_tests` 註冊（置於 sanitizer 步驟之後，確保 ASan DLL 已在 exe 旁）。測試未連結 Qt，故沒有呼叫 `nexus_deploy_qt`；之後若有測試連 Qt 需呼叫。
+  - **MSVC ASan LNK2038 真的出現**（gtest.lib 與我們的物件 `annotate_vector` / `annotate_string` 不一致，LNK1319）。選擇方案：在 `cmake/Sanitizers.cmake` 的 MSVC 分支對我們自己的 target 加 `_DISABLE_VECTOR_ANNOTATION` 與 `_DISABLE_STRING_ANNOTATION`。理由：改動小、不用為 ASan 另建一套 vcpkg triplet／相依（建置時間與磁碟加倍、CI 快取也要加倍）。代價：我們程式碼內 `std::vector`／`std::string` 的 container-overflow 偵測失效（堆積／堆疊越界、use-after-free 仍會抓到）。若日後想要完整偵測，可改用 ASan 版 overlay triplet 重建 vcpkg 套件，屆時移除這兩個定義。
+  - Linux 尚未驗證，等 T-005 CI（GCC/Clang 下 tl-expected、GTest 的 find_package 與 sanitizer 組合）。
 
 ---
 

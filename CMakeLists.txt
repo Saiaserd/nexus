@@ -29,4 +29,8 @@ include(NexusQtDeploy)
 include(CompilerWarnings)
 include(Sanitizers)
 
+enable_testing()
+
+add_subdirectory(src/core)
 add_subdirectory(src/app)
+add_subdirectory(tests)
