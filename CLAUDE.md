@@ -16,11 +16,10 @@ Nexus：知識圖驅動的 AI 開發環境。C++20 + Qt 6，目標平台 Windows
 - 一律透過 `scripts/dev.ps1`，不要手動設定 PATH：
   - `./scripts/dev.ps1 all <preset>`（configure + build + test），preset：`debug`、`release`、`asan`、`tidy`
   - `./scripts/dev.ps1 format` / `format-check`
-- 腳本會載入 VS 2022 的 vcvars64，並使用 `%LOCALAPPDATA%
-exuscpkg`（獨立 clone，釘在 `vcpkg.json` 的 `builtin-baseline`）。
+- 腳本會載入 VS 2022 的 vcvars64，並使用 `%LOCALAPPDATA%\nexus\vcpkg`（獨立 clone，釘在 `vcpkg.json` 的 `builtin-baseline`）。
   注意：vcvars64 會把 `VCPKG_ROOT` 指向 VS 內建的 vcpkg，腳本已處理，不要用 VS 內建的那個。
-- Qt 6.8.3：`C:\Qt.8.3\msvc2022_64`（`QT_ROOT` 可覆寫）。
-- clang-tidy / clang-format 要用 `VC\Tools\Llvmdin` 底下的 64 位元版；32 位元版的 clang-tidy 會當機。
+- Qt 6.8.3：`C:\Qt\6.8.3\msvc2022_64`（`QT_ROOT` 可覆寫）。
+- clang-tidy / clang-format 要用 `VC\Tools\Llvm\x64\bin` 底下的 64 位元版；32 位元版的 clang-tidy 會當機。
 - MSVC ASan 已關閉 STL 容器標註（`_DISABLE_VECTOR_ANNOTATION` / `_DISABLE_STRING_ANNOTATION`），因為 vcpkg 的套件不是用 ASan 建置的。洩漏偵測只在 Linux CI 上有。
 
 ## 程式碼規範
