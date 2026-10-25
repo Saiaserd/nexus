@@ -98,6 +98,10 @@ std::optional<NameError> validateName(const QString& name)
     if (name.endsWith(u' ') || name.endsWith(u'.')) {
         return NameError::TrailingSpaceOrDot;
     }
+    // After the trailing check so "." and ".." keep reporting TrailingSpaceOrDot.
+    if (name.startsWith(u'.')) {
+        return NameError::Hidden;
+    }
     if (isReservedStem(name)) {
         return NameError::ReservedName;
     }

@@ -482,17 +482,17 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-105 小修：隱藏檔名
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-102
 - **目標**：處理 T-102 審核時留下的事項
 - **檔案**：`src/core/NoteFiles.cpp`、`src/core/FileError.h`（若需要新的 NameError）、`tests/core/NoteFilesTest.cpp`
 - **完成標準**：
   - `validateName` 拒絕以 `.` 開頭的名稱（新增 `NameError::Hidden` 或沿用合適的列舉），並附測試（ADR 0004 補充）
-- **備註**：
+- **備註**：新增 `NameError::Hidden`；`validateName` 在尾端空白／點檢查之後判斷，所以 `.` 與 `..` 仍回報 `TrailingSpaceOrDot`（既有測試不變），`.hidden`、`.nexus` 回報 `Hidden`。測試：`ValidateNameTest.RejectsHiddenNames`、`NameValidationOnOperationsTest.RejectsHiddenNamesOnCreateAndRename`（create／rename 都拒絕；放在獨立 suite，因為 `NoteFilesTest` 是 TEST_F fixture，不能混用 TEST）。debug／release／asan／tidy 全部 156 測試通過，format-check 通過。
 
 ### T-301 關係圖力導向佈局（核心演算法）
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：M0
 - **目標**：M3 圖譜視圖使用的佈局引擎，不依賴 Qt Widgets，可單元測試
 - **檔案**：`src/core/graph/ForceLayout.h/.cpp`、`src/core/graph/QuadTree.h/.cpp`（Barnes-Hut）、`tests/core/ForceLayoutTest.cpp`
@@ -507,6 +507,15 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
   - 效能（release）：1,000 個節點、3,000 條邊時單步 < 4ms（PLAN「1000 節點 60 FPS」，留時間給繪圖）；10,000 個節點、30,000 條邊時單步 < 60ms。時間斷言只在 `NEXUS_ENFORCE_PERF` 下檢查
   - 至少 15 個測試
 - **備註**：
+  - 檔案：`src/core/graph/{Vec2.h, QuadTree.h/.cpp, ForceLayout.h/.cpp}`（命名空間 `nexus::core`，只用標準函式庫）、`tests/core/ForceLayoutTest.cpp`（20 個測試，含 5 個 QuadTree、2 個 Perf）。
+  - 介面：`ForceLayout(seed)` 或 `ForceLayout(N, edges, seed)`；`addNode()`／`addNode(Vec2)`／`removeNode(i)`／`addEdge`／`removeEdge`（任何結構變動都會 `reheat()`，既有節點位置保留）；`step()`、`isSettled()`、`reheat(alpha=0.5)`（只會升高 alpha）、`pin/unpin/isPinned`、`positions()`（`std::span<const Vec2>`，結構變動後失效）、`setParams()`。
+  - `removeNode(i)` 採「保序」：較大的索引全部減 1，相連的邊一併移除（UI 需同步自己的索引表）。邊為無向，自環與重複邊被忽略（回傳 false）。
+  - 演算法照 d3-force：斥力為 1/d 核（`repulsion` 30 × alpha），Barnes-Hut θ 預設 0.9（θ=0 為精確 O(n²)，測試用來對照）；彈簧 `linkDistance` 30、強度預設 1/min(度數)、依度數分配偏移；中心引力 `centerStrength` 0.05；`velocityDecay` 0.6；`alphaMin` 0.001、`alphaDecay` 0.0228（約 300 步）、`alphaTarget` 0（拖曳時可設 0.3 讓它不 settle）。
+  - 重疊節點：QuadTree 對座標完全相同的點用索引雜湊出確定的方向推開；彈簧長度為 0 時用 mt19937 的微小抖動。Cell 含查詢點時一律往下展開，避免把自己算進質心。
+  - 決定性：初始位置為黃金角螺旋（起始角由 seed 決定），亂數只用原始 `std::mt19937` 輸出（不用 `<random>` 的 distribution），所以同 seed 同平台結果相同。
+  - 效能（release，30～60 步平均，含最初最擁擠的步驟）：1,000 節點／3,000 邊 0.54 ms（上限 4）；10,000 節點／30,000 邊 8.4 ms（上限 60）。
+  - 沒有做：節點質量／權重（目前每個點質量 1）、碰撞力、多執行緒；新加入的節點不會自動放在鄰居附近（UI 可用 `addNode(Vec2)` 指定）。
+  - debug／release／asan／tidy 全部 181 個測試通過，format-check 通過。
 
 ### T-106 dev.ps1 參數轉發
 - **負責**：C
