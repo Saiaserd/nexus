@@ -34,3 +34,12 @@ nexus_enable_sanitizers(nexus_parser_tests)
 nexus_deploy_qt(nexus_parser_tests)
 
 gtest_discover_tests(nexus_parser_tests)
+
+# GUI smoke test: start the real application, show the main window, quit.
+# Non-Windows uses the offscreen platform plugin so it runs headless (CI); on Windows the
+# native plugin is used (the offscreen plugin is not deployed by windeployqt).
+add_test(NAME nexus_gui_smoke COMMAND nexus --quit-after-show)
+set_tests_properties(nexus_gui_smoke PROPERTIES TIMEOUT 60)
+if(NOT WIN32)
+  set_tests_properties(nexus_gui_smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()

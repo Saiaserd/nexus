@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  QT_VERSION: "6.8.3"
+  # Must equal "builtin-baseline" in vcpkg.json (the same commit as local dev, ADR 0003).
+  VCPKG_COMMIT: 9e593bb18ea69cc5095e012465dcd675a822ed0d
+  VCPKG_DISABLE_METRICS: "1"
+  # vcpkg binary cache: file-based provider stored in a directory that actions/cache
+  # restores and saves (the x-gha provider was retired together with the old cache API).
+  VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/.vcpkg-binary-cache,readwrite
+
+jobs:
+  format:
+    name: clang-format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install clang-format 18.1.8 (same version as the local VS 2022 one)
+        run: pip install clang-format==18.1.8
+      - name: Check formatting
+        shell: bash
+        run: |
+          clang-format --version
+          git ls-files '*.cpp' '*.h' '*.hpp' '*.cc' | xargs clang-format --dry-run -Werror
+
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-gcc
+            os: ubuntu-latest
+            cc: gcc
+            cxx: g++
+            qt_arch: linux_gcc_64
+          - name: linux-clang
+            os: ubuntu-latest
+            cc: clang-18
+            cxx: clang++-18
+            qt_arch: linux_gcc_64
+            tidy: true
+          - name: windows-msvc
+            os: windows-latest
+            qt_arch: win64_msvc2022_64
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system packages (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build pkg-config curl zip unzip tar \
+            libgl1-mesa-dev libglu1-mesa-dev libxkbcommon-dev libxkbcommon-x11-0 \
+            libegl1 libfontconfig1-dev libfreetype-dev libdbus-1-3 libglib2.0-0 \
+            libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-render-util0 libxcb-xinerama0 libxcb-shape0
+      - name: Install Clang 18 and clang-tidy 18 (Linux, clang)
+        if: matrix.tidy
+        run: sudo apt-get install -y --no-install-recommends clang-18 clang-tidy-18
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: ${{ matrix.qt_arch }}
+          cache: true
+
+      - name: Developer environment (MSVC)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Toolchain environment
+        run: |
+          echo "QT_ROOT=$QT_ROOT_DIR" >> "$GITHUB_ENV"
+          if [ -n "${{ matrix.cc }}" ]; then
+            echo "CC=${{ matrix.cc }}" >> "$GITHUB_ENV"
+            echo "CXX=${{ matrix.cxx }}" >> "$GITHUB_ENV"
+          fi
+          if [ -n "${{ matrix.tidy }}" ]; then
+            echo "NEXUS_LLVM_BIN=/usr/lib/llvm-18/bin" >> "$GITHUB_ENV"
+          fi
+          # Git's usr/bin/link.exe would shadow MSVC's linker.
+          if [ "$RUNNER_OS" = "Windows" ]; then rm -f "/usr/bin/link.exe"; fi
+
+      - name: Set up vcpkg at the pinned commit
+        run: |
+          # Written after msvc-dev-cmd, so it overrides the VS-bundled VCPKG_ROOT it exports.
+          root="${RUNNER_TEMP//\//}/vcpkg"
+          mkdir -p "$root" "$GITHUB_WORKSPACE/.vcpkg-binary-cache"
+          cd "$root"
+          git init -q
+          git remote add origin https://github.com/microsoft/vcpkg.git
+          git fetch -q --depth 1 origin "$VCPKG_COMMIT"
+          git checkout -q FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$VCPKG_COMMIT"
+          if [ "$RUNNER_OS" = "Windows" ]; then ./bootstrap-vcpkg.bat -disableMetrics; else ./bootstrap-vcpkg.sh -disableMetrics; fi
+          echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
+
+      - name: Restore vcpkg binary cache
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .vcpkg-binary-cache
+          key: vcpkg-${{ matrix.name }}-${{ hashFiles('vcpkg.json') }}-${{ env.VCPKG_COMMIT }}
+          restore-keys: |
+            vcpkg-${{ matrix.name }}-
+
+      - name: Show toolchain
+        run: |
+          echo "VCPKG_ROOT=$VCPKG_ROOT QT_ROOT=$QT_ROOT"
+          cmake --version
+          ninja --version
+          ${CXX:-c++} --version || true
+
+      - name: Debug - configure
+        run: .github/scripts/run-logged.sh "debug configure" cmake --preset debug
+      - name: Debug - build
+        run: .github/scripts/run-logged.sh "debug build" cmake --build --preset debug
+      - name: Debug - test
+        run: .github/scripts/run-logged.sh "debug test" ctest --preset debug
+
+      - name: ASan - configure
+        run: .github/scripts/run-logged.sh "asan configure" cmake --preset asan
+      - name: ASan - build
+        run: .github/scripts/run-logged.sh "asan build" cmake --build --preset asan
+      - name: ASan - test
+        env:
+          ASAN_OPTIONS: detect_leaks=1:strict_string_checks=1
+        run: .github/scripts/run-logged.sh "asan test" ctest --preset asan
+
+      - name: clang-tidy - configure
+        if: matrix.tidy
+        run: .github/scripts/run-logged.sh "tidy configure" cmake --preset tidy
+      - name: clang-tidy - build (zero warnings)
+        if: matrix.tidy
+        run: .github/scripts/run-logged.sh "tidy build" cmake --build --preset tidy
+      - name: clang-tidy - test
+        if: matrix.tidy
+        run: .github/scripts/run-logged.sh "tidy test" ctest --preset tidy
+
+      - name: Save vcpkg binary cache
+        if: always() && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .vcpkg-binary-cache
+          key: vcpkg-${{ matrix.name }}-${{ hashFiles('vcpkg.json') }}-${{ env.VCPKG_COMMIT }}
