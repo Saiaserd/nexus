@@ -33,6 +33,7 @@ include(ClangTidy)
 enable_testing()
 
 add_subdirectory(src/core)
+add_subdirectory(src/parser)
 add_subdirectory(src/ui)
 add_subdirectory(src/app)
 add_subdirectory(tests)
