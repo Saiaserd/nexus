@@ -197,7 +197,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-101 Vault 開啟與掃描（核心）
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：M0
 - **目標**：把一個資料夾開啟為 vault，取得所有筆記與資料夾的結構
 - **檔案**：
@@ -212,7 +212,14 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
   - 結果依路徑排序（資料夾在前、同層依名稱的自然排序，例如「筆記2」排在「筆記10」前面），排序規則寫成獨立函式並測試
   - 測試用 `QTemporaryDir` 建立 fixture，包含中文檔名、空格、巢狀資料夾和隱藏資料夾
   - 效能測試：產生 10,000 篇筆記，`Vault::open` 在 release 下 < 1 秒（測試加上 `perf` label，ctest 預設照跑；asan 下只檢查正確性、不檢查時間）
-- **備註**：
+- **備註**：（開發 A）
+  - 新增 `FileError.h`（`FileErrorKind` 列舉含 NotFound/NotADirectory/AccessDenied/AlreadyExists/InvalidPath/InvalidName/InvalidEncoding/TrashFailed/IoError…，另有 `NameError`；T-102 共用）、`NoteInfo.h`、`PathOrder.h/.cpp`（`naturalLess`、`pathLess`、`isSafeRelPath`，排序規則獨立並有測試）、`Vault.h/.cpp`。
+  - 排序採自己實作的自然排序（數字段比數值、不分大小寫、與語系無關），不用 `QCollator`，避免不同語系結果不同。資料夾排前面：`pathLess` 逐層比較，路徑中途的成分視為資料夾。
+  - `Vault` 是純值型別（含 `QSet` 索引供 `contains`）；`absolutePath` 對不安全的相對路徑（`..`、絕對路徑、反斜線、`:`）回傳空字串。子資料夾無法讀取時略過，不讓整個 open 失敗。
+  - `.lnk` 在 Windows 不是目錄符號連結，測試的符號連結案例在 Windows 上只驗證不出錯；Linux CI 會建立真正的迴圈連結。無法建立連結時測試自動 skip。
+  - 效能測試套件命名為 `VaultPerf`，`tests/CMakeLists.txt` 以兩次 `gtest_discover_tests`（`TEST_FILTER`）讓名稱以 `Perf` 結尾的測試帶 `perf` label；時間斷言只在 Release 編譯（定義 `NEXUS_ENFORCE_PERF`）。Release 計時我沒有量測（debug 下含建檔約 5 秒）。
+  - `nexus_core` 連結 `Qt6::Core`；測試執行檔也連結並呼叫 `nexus_deploy_qt`。
+  - 測試 `UnreadableRootIsAccessDenied` 在 Windows 上 skip（無 POSIX 權限）。
 
 ---
 
