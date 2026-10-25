@@ -5,7 +5,8 @@
 ## 建置（Windows）
 
 前置：Visual Studio 2022（含 C++ 工作負載）、Qt 6.8.3 位於 `C:\Qt\6.8.3\msvc2022_64`、git。
-全部指令都透過 `scripts/dev.ps1`，它會自動載入 VS x64 環境、設定 `VCPKG_ROOT` / `QT_ROOT`：
+全部指令都透過 `scripts/dev.ps1`，它會自動載入 VS x64 環境、設定 `QT_ROOT`，並準備釘死版本的 vcpkg（見 ADR 0003）：
+首次執行會把 vcpkg clone 到 `%LOCALAPPDATA%/nexus/vcpkg`、checkout 到 `vcpkg.json` 的 `builtin-baseline` 並 bootstrap；baseline 變更時自動更新。
 
 ```powershell
 ./scripts/dev.ps1 configure debug   # 首次會用 vcpkg 建置相依套件，需數分鐘
@@ -19,7 +20,7 @@
 若 PowerShell 擋下腳本（執行原則），改用：
 `powershell -ExecutionPolicy Bypass -File scripts/dev.ps1 build debug`
 
-可用環境變數覆寫：`NEXUS_VS_ROOT`、`VCPKG_ROOT`、`QT_ROOT`。
+可用環境變數覆寫：`NEXUS_VS_ROOT`、`VCPKG_ROOT`（自備 vcpkg，腳本不管理；注意 VS 開發者環境本身設的 VCPKG_ROOT 會被忽略）、`QT_ROOT`。
 
 Qt DLL：建置後由 `windeployqt` 自動複製到執行檔旁（`cmake/NexusQtDeploy.cmake`），
 執行檔不需要設定 PATH 即可直接執行。
@@ -27,7 +28,7 @@ Qt DLL：建置後由 `windeployqt` 自動複製到執行檔旁（`cmake/NexusQt
 ## 建置（Linux）
 
 ```bash
-export VCPKG_ROOT=/path/to/vcpkg
+export VCPKG_ROOT=/path/to/vcpkg   # checkout 到 vcpkg.json 的 builtin-baseline
 export QT_ROOT=/path/to/Qt/6.8.3/gcc_64
 cmake --preset debug && cmake --build --preset debug && ctest --preset debug
 ```

@@ -138,7 +138,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-007 改用獨立 vcpkg，移除自行下載 pkgconf
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-002
 - **目標**：依 ADR 0003，以釘死版本的獨立 vcpkg 取代 VS 內建 vcpkg
 - **檔案**：
@@ -151,7 +151,12 @@ exus` 與 `build/` 後，在乾淨的 PowerShell 執行 `./scripts/dev.ps1 all d
   - 腳本裡不再有任何沒驗證雜湊的二進位下載
   - `debug`、`release`、`asan` 三個 preset 都建置成功
   - 備註列出升級後各套件的實際版本（尤其 tree-sitter）
-- **備註**：（PM）審核 T-001 時提出，見 ADR 0003。
+- **備註**：（A）已完成。
+  - `builtin-baseline` = `9e593bb18ea69cc5095e012465dcd675a822ed0d`，對應 vcpkg release tag **2026.07.29**（注意該 tag 是 annotated tag，`git ls-remote` 的 `refs/tags/2026.07.29` 是 tag 物件、commit 要看 `^{}` 那行）。
+  - 升級後實際版本：gtest 1.17.0#3、md4c 0.5.3、sqlite3 3.53.4（core,fts5,json1）、tl-expected 1.3.1、**tree-sitter 0.26.11**。
+  - `scripts/dev.ps1`：新增 `Initialize-Vcpkg`（clone 到 `%LOCALAPPDATA%\nexus\vcpkg`、checkout baseline、bootstrap，以 `.nexus-bootstrapped` 戳記判斷 baseline 變更時重 bootstrap）；刪除 `Ensure-PkgConfig`、`PKG_CONFIG`、`VCPKG_KEEP_ENV_VARS`、`VCPKG_DOWNLOADS` 設定。腳本中不再有任何自行下載的二進位，下載皆由 vcpkg 驗證 SHA512。
+  - 注意：`vcvars64.bat` 本身會匯出 VCPKG_ROOT 指向 VS 內建 vcpkg，所以腳本在匯入 VS 環境前先記下呼叫者的 `VCPKG_ROOT`；只有它不在 VS 目錄下才當作自備 vcpkg 使用，否則用受管理的 clone。
+  - 驗收：刪除 `build/`、舊的 `%LOCALAPPDATA%\vcpkg`（含 pkgconf 快取 `%LOCALAPPDATA%\nexus\tools`）、vcpkg clone 內的 downloads/buildtrees/packages/vcpkg.exe 與 bootstrap 戳記後（clone 本身沿用以省流量，bootstrap 與相依從頭建），`./scripts/dev.ps1 all debug|release|asan` 皆 exit 0。
 
 ---
 
