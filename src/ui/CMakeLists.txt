@@ -6,8 +6,12 @@ add_library(nexus_ui STATIC
   ClickableFrame.cpp
   CrashDialogs.h
   CrashDialogs.cpp
+  DeleteConfirmDialog.h
+  DeleteConfirmDialog.cpp
   ElidedLabel.h
   ElidedLabel.cpp
+  FileTreePanel.h
+  FileTreePanel.cpp
   Fonts.h
   Fonts.cpp
   Icons.h
@@ -30,6 +34,8 @@ add_library(nexus_ui STATIC
   EditorTabs.cpp
   RecentVaults.h
   RecentVaults.cpp
+  RenameDelegate.h
+  RenameDelegate.cpp
   Theme.h
   Theme.cpp
   ThemeManager.h
@@ -42,6 +48,8 @@ add_library(nexus_ui STATIC
   VaultSidebar.cpp
   VaultStatusWidget.h
   VaultStatusWidget.cpp
+  VaultTreeModel.h
+  VaultTreeModel.cpp
   WelcomePage.h
   WelcomePage.cpp
   WordCount.h

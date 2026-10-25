@@ -514,8 +514,39 @@ QLabel#sidebarTitle {
     color: @text@;
 }
 
-QLabel#sidebarSummary {
-    padding-top: 18px;
+QTreeView#fileTree {
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 6px 6px 12px 6px;
+    selection-background-color: transparent;
+    show-decoration-selected: 0;
+}
+
+/* in-place rename (States.dc.html 2): the editor sits over the rows below the item */
+QWidget#renameEditor {
+    background: @panel@;
+}
+
+QLabel#renameError {
+    padding: 6px 8px;
+    border-radius: 4px;
+    background: @dangerBg@;
+    color: @danger@;
     font-size: 12px;
-    color: @muted@;
+}
+
+/* delete confirmation (States.dc.html 3) */
+QDialog#deleteConfirmDialog {
+    background: @bg@;
+}
+
+QLabel#dialogTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: @text@;
+}
+
+QLabel#dialogBody {
+    color: @bodyText@;
 }

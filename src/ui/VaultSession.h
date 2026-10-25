@@ -52,6 +52,9 @@ public:
     // Valid while open; null otherwise. Background tasks keep the shared_ptr while they use it.
     [[nodiscard]] std::shared_ptr<const core::NoteFiles> files() const { return m_files; }
     [[nodiscard]] core::VaultWatcher* watcher() const { return m_watcher.get(); }
+    // The vault as scanned when it was opened (empty while closed). Later changes arrive through
+    // the watcher's signals; this is not kept up to date.
+    [[nodiscard]] const core::Vault& snapshot() const { return m_snapshot; }
     // Closed vaults whose watcher still waits for background tasks (for tests).
     [[nodiscard]] int parkedCount() const { return static_cast<int>(m_parked.size()); }
 
@@ -84,6 +87,7 @@ private:
     int m_noteCount = 0;
     int m_folderCount = 0;
 
+    core::Vault m_snapshot;
     std::shared_ptr<core::NoteFiles> m_files;
     std::unique_ptr<core::VaultWatcher> m_watcher;
     std::vector<Parked*> m_parked;

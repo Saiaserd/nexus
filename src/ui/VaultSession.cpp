@@ -168,6 +168,7 @@ void VaultSession::onFinished()
     m_root = m_pendingPath;
     m_noteCount = static_cast<int>(result->notes().size());
     m_folderCount = static_cast<int>(result->folders().size());
+    m_snapshot = *result;
     m_files = std::make_shared<core::NoteFiles>(m_root);
     m_watcher = std::make_unique<core::VaultWatcher>(std::move(*result));
     m_files->setWriteListener(m_watcher->writeListener());
@@ -201,6 +202,7 @@ void VaultSession::release()
     }
     m_files.reset();
     m_watcher.reset();
+    m_snapshot = core::Vault();
 }
 
 void VaultSession::close()

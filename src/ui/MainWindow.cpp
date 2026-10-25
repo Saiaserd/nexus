@@ -57,6 +57,8 @@ MainWindow::MainWindow(ThemeManager& theme, QSettings& settings, QWidget* parent
 
     buildMenus();
     buildContent();
+    m_sidebar->setSession(m_session);
+    connect(m_newNoteAction, &QAction::triggered, m_sidebar, &VaultSidebar::newNote);
 
     connect(&m_theme, &ThemeManager::themeChanged, this, &MainWindow::refreshThemeChecks);
     connect(&m_session, &VaultSession::opening, this, &MainWindow::onOpening);
@@ -178,7 +180,7 @@ void MainWindow::buildContent()
     m_splitter->setChildrenCollapsible(false);
     m_splitter->setHandleWidth(1);
 
-    m_sidebar = new VaultSidebar(m_theme, m_splitter);
+    m_sidebar = new VaultSidebar(m_theme, &m_settings, m_splitter);
     m_sidebar->setMinimumWidth(kSidebarMinWidth);
     m_sidebar->setMaximumWidth(kSidebarMaxWidth);
     m_sidebar->hide(); // only while a vault is open

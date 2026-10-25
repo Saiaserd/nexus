@@ -1,65 +1,56 @@
 #include "ui/VaultSidebar.h"
 
-#include <QHBoxLayout>
-#include <QLabel>
 #include <QVBoxLayout>
 
-#include "ui/ElidedLabel.h"
-#include "ui/Icons.h"
-#include "ui/ThemeManager.h"
+#include "ui/FileTreePanel.h"
 
 namespace nexus::ui {
 
-VaultSidebar::VaultSidebar(ThemeManager& theme, QWidget* parent)
-    : QFrame(parent), m_theme(theme), m_summary(new QLabel(this))
+VaultSidebar::VaultSidebar(ThemeManager& theme, QSettings* settings, QWidget* parent)
+    : QFrame(parent), m_panel(new FileTreePanel(theme, this))
 {
     setObjectName(QStringLiteral("sidebar"));
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
+    layout->addWidget(m_panel);
 
-    auto* header = new QFrame(this);
-    header->setObjectName(QStringLiteral("sidebarHeader"));
-    header->setFixedHeight(40);
-    auto* headerLayout = new QHBoxLayout(header);
-    headerLayout->setContentsMargins(14, 0, 6, 0);
-    headerLayout->setSpacing(6);
-    m_icon = new QLabel(header);
-    m_icon->setFixedSize(14, 14);
-    headerLayout->addWidget(m_icon);
-    m_name = new ElidedLabel(header);
-    m_name->setObjectName(QStringLiteral("sidebarTitle"));
-    headerLayout->addWidget(m_name, 1);
-    layout->addWidget(header);
-
-    m_summary->setObjectName(QStringLiteral("sidebarSummary"));
-    m_summary->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-    layout->addWidget(m_summary, 1);
-
-    connect(&m_theme, &ThemeManager::themeChanged, this, &VaultSidebar::applyIcons);
-    applyIcons();
+    m_panel->setSettings(settings);
+    connect(m_panel, &FileTreePanel::openNoteRequested, this, &VaultSidebar::openNoteRequested);
+    connect(m_panel, &FileTreePanel::noteRenamed, this, &VaultSidebar::noteRenamed);
+    connect(m_panel, &FileTreePanel::noteRemoved, this, &VaultSidebar::noteRemoved);
 }
 
-void VaultSidebar::applyIcons()
+void VaultSidebar::setSession(VaultSession& session)
 {
-    m_icon->setPixmap(icons::pixmap(QStringLiteral("folder"), m_theme.palette().accent, 14,
-                                    m_icon->devicePixelRatioF()));
+    m_panel->setSession(session);
 }
 
-void VaultSidebar::setVault(const QString& name, int noteCount)
+void VaultSidebar::setVault(const QString& name, int /*noteCount*/)
 {
-    m_name->setFullText(name);
-    setNoteCount(noteCount);
+    m_panel->setVaultName(name);
 }
 
-void VaultSidebar::setNoteCount(int count)
-{
-    m_summary->setText(tr("%1 篇筆記").arg(count));
-}
+void VaultSidebar::setNoteCount(int /*count*/) {}
 
 QString VaultSidebar::vaultName() const
 {
-    return m_name->fullText();
+    return m_panel->vaultName();
+}
+
+void VaultSidebar::setNoteDirty(const QString& relPath, bool dirty)
+{
+    m_panel->setNoteDirty(relPath, dirty);
+}
+
+void VaultSidebar::selectNote(const QString& relPath)
+{
+    m_panel->selectNote(relPath);
+}
+
+void VaultSidebar::newNote()
+{
+    m_panel->newNote();
 }
 
 } // namespace nexus::ui

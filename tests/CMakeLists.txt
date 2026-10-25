@@ -56,7 +56,9 @@ add_executable(nexus_ui_tests
   ui/WordCountTest.cpp
   ui/MarkdownHighlighterTest.cpp
   ui/NoteSessionTest.cpp
-  ui/EditorTabsTest.cpp)
+  ui/EditorTabsTest.cpp
+  ui/VaultTreeModelTest.cpp
+  ui/FileTreePanelTest.cpp)
 
 target_compile_definitions(nexus_ui_tests PRIVATE NEXUS_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 target_link_libraries(nexus_ui_tests PRIVATE nexus_ui Qt6::Test GTest::gtest)
