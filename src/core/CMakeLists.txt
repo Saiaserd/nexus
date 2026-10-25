@@ -14,12 +14,14 @@ add_library(nexus_core STATIC
   NoteDocument.h
   NoteDocument.cpp
   NoteFiles.h
-  NoteFiles.cpp)
+  NoteFiles.cpp
+  VaultWatcher.h
+  VaultWatcher.cpp)
 
 # Headers are included as "core/Expected.h" -> expose the src/ directory.
 target_include_directories(nexus_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 # QtCore only (ADR 0004); never link Widgets here.
-target_link_libraries(nexus_core PUBLIC tl::expected Qt6::Core)
+target_link_libraries(nexus_core PUBLIC tl::expected Qt6::Core Qt6::Concurrent)
 
 nexus_set_warnings(nexus_core)
 nexus_enable_sanitizers(nexus_core)

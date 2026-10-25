@@ -6,9 +6,11 @@ add_executable(nexus_core_tests
   core/SmokeTest.cpp
   core/PathOrderTest.cpp
   core/VaultTest.cpp
-  core/NoteFilesTest.cpp)
+  core/NoteFilesTest.cpp
+  core/VaultWatcherTest.cpp
+  core/TestMain.cpp)
 
-target_link_libraries(nexus_core_tests PRIVATE nexus_core Qt6::Core GTest::gtest GTest::gtest_main)
+target_link_libraries(nexus_core_tests PRIVATE nexus_core Qt6::Core Qt6::Test GTest::gtest)
 
 nexus_deploy_qt(nexus_core_tests)
 # Timing assertions only make sense in optimized builds (debug / asan check correctness only).

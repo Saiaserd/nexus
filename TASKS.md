@@ -254,7 +254,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
   - rename：筆記保留原副檔名（連 .MD 大小寫都保留）；資料夾不加副檔名。名稱衝突由檔案系統判斷（Windows/macOS 不分大小寫，Linux 分），只改大小寫時先改成暫時名稱 <name>.nexus-rename-N 再改成目標，失敗會盡力還原。rename 成同名是 no-op 成功。
   - createNote 用 QIODevice::NewOnly 建立，名稱重複時加「 1」「 2」…；模組內寫死預設名稱「未命名」是規格要求，屬資料而非錯誤文案。
   - moveToTrash 用 QFile::moveToTrash，同時適用資料夾；失敗回 TrashFailed，絕不改為永久刪除。測試在沒有資源回收筒的環境會 skip。
-  - 本機 debug 與 asan 皆 48 個測試通過（2 skip：Windows 上的 AccessDenied 測試）；tidy 零警告。
+  - 本機 debug 與 asan 皆 48 個測試通過（1 skip：Windows 上的 AccessDenied 測試；資源回收筒測試有實際執行）；tidy 零警告。
 
 ---
 
@@ -289,7 +289,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-103 Vault 檔案監看（核心）
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-102
 - **目標**：外部新增、修改、刪除、改名筆記時發出 signal；Nexus 自己存檔造成的變動不算
 - **檔案**：
@@ -303,7 +303,17 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
   - 改名在 signal 層呈現為「一個 removed 加一個 added」即可（UI 自行配對）
   - 測試不能不穩定（不靠固定 sleep；用 `QSignalSpy::wait` 並設上限）。連續跑 20 次都要通過（`ctest --repeat until-fail:20 -R VaultWatcher`）
   - 監看本身不能卡住 UI 執行緒（重新掃描放到 `QtConcurrent`）
-- **備註**：
+- **備註**：（開發 A）
+  - 新增 VaultWatcher.h/.cpp、tests/core/VaultWatcherTest.cpp、tests/core/TestMain.cpp；修改 nexus_core 連結 Qt6::Concurrent、根目錄 CMakeLists 的 find_package 加入 Concurrent 與 Test。
+  - 做法：QFileSystemWatcher 監看根目錄、所有資料夾與所有筆記檔，事件只負責啟動 debounce（預設 150ms，從第一個事件起算固定視窗，不會被連續事件無限延後）；視窗結束後在 QtConcurrent 工作執行緒重新掃描（Vault::open），回到主執行緒與上一份快照比對，產生 notesAdded/Removed/Modified/foldersChanged。因此行為與平台事件細節無關，新資料夾與其內筆記一併建立也能偵測（登記監看的空窗期由「登記完成後再驗證掃描一次」補上）。掃描中再有事件會排隊重掃一次。
+  - 登記數千個監看路徑本身是 I/O：改成每批 256 個、在事件迴圈輪次之間分批登記，避免建構時卡住 UI。
+  - 忽略自己的寫入：NoteFiles::setWriteListener(VaultWatcher::writeListener())，write 成功後登記新的 size+mtime；掃描結果與登記值相同就不發 notesModified。登記後若又被外部改成別的內容，仍會回報。已知小空窗：寫入 commit 到登記之間若剛好有一次掃描完成，會多報一次 notesModified（UI 收到時比對內容即可，無害）。這是 NoteFiles 唯一的介面新增（T-102 已加，非破壞性）。
+  - 額外公開介面：rescanNow()（立即重掃，略過 debounce）、signal rescanned()（每次掃描結束都發，供測試與 UI 判斷穩定）、setDebounceMs()/debounceMs()、expectWrite()（可從任何執行緒呼叫，內部用 QMutex）。根目錄消失或不可讀時保留舊快照、不發任何 signal（只發 rescanned）。
+  - 測試：自訂 gtest main（tests/core/TestMain.cpp）建立 QCoreApplication，nexus_core_tests 不再連結 GTest::gtest_main；選擇自訂 main 而非 GTest environment，因為 QCoreApplication 必須在 main 的堆疊上建立並先於任何測試。QSignalSpy 搭配上限 10 秒的 wait，沒有固定 sleep；「不應發生」的斷言一律用 rescanNow()+等待 rescanned 取代等待逾時。
+  - 穩定性：debug 與 asan 的 build 目錄各跑 ctest --repeat until-fail:20 -R VaultWatcher（13 個測試各重複 20 次）全數通過。dev.ps1 吃不下 --repeat 參數（會被 PowerShell 當成自己的參數），所以直接呼叫 VS 內建的 ctest.exe；PM 若要納入腳本需改 dev.ps1，我沒動（開發 C 的範圍）。
+  - clang-tidy：Q_OBJECT 的 moc 碼沒有造成問題，不需要 SKIP_LINTING；唯一的坑是 #include <QtConcurrent> 總標頭會引入 qplugin.h，clang 在 MSVC 模式下解析失敗（offsetof 常數運算式），改成 <QtConcurrent/QtConcurrentRun> 即可，以後請避免在被 tidy 的檔案引入 Qt 的總標頭。
+  - Release 也跑過：61 個測試通過，VaultPerf 在 Release 啟用時間斷言（Vault::open 10k < 1 秒）通過。
+  - 限制：重新命名在 signal 層是一個 removed 加一個 added（規格如此）；監看路徑數受作業系統上限限制（Linux inotify max_user_watches），登記失敗的路徑會被略過，但資料夾事件加上手動 rescanNow() 仍可補救。Linux 上尚未實測，等 CI（T-005）。
 
 ---
 

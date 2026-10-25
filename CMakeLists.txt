@@ -23,7 +23,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 # Qt is NOT installed through vcpkg (ADR 0001). It is located through
 # CMAKE_PREFIX_PATH, which the presets fill from the QT_ROOT environment
 # variable (Windows: scripts/dev.ps1 sets it; Linux CI: install-qt-action).
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Widgets Concurrent Test)
 
 include(NexusQtDeploy)
 include(CompilerWarnings)
