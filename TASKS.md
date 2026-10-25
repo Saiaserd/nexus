@@ -519,12 +519,12 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-106 dev.ps1 參數轉發
 - **負責**：C
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-005
 - **目標**：`./scripts/dev.ps1 test debug --repeat until-fail:20 -R VaultWatcher` 能把後面的參數完整轉給 ctest（目前 PowerShell 會把 `--repeat` 吃掉）
 - **檔案**：`scripts/dev.ps1`、`README.md`
 - **完成標準**：`test`、`build`、`configure` 後面的任意參數（含 `--` 開頭的）都能原樣轉給底層工具；README 附上範例
-- **備註**：
+- **備註**：根因是 `param()` 宣告後，PowerShell 會把 `--repeat`、`-C`、`-R` 等當成（可縮寫的）參數名稱綁定。改為完全不宣告 param，從 `$args` 原樣讀取：第一個是指令、第二個若不以 `-` 開頭則為 preset，其餘全部轉給 cmake／ctest（`configure`／`build`／`test`；`all` 不轉發）。已驗證 `test debug --repeat until-fail:2 -R VaultWatcher`、`test -R Smoke`、`build debug --target X -j 4`。不再支援 `-Command`／`-Preset` 具名參數。
 
 ### T-401 Claude Code CLI 橋接（M4 核心）
 - **負責**：C

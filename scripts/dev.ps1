@@ -23,20 +23,26 @@
                                        in .../Llvm/bin crashes clang-tidy)
     QT_ROOT        Qt kit dir         (default: C:\Qt\6.8.3\msvc2022_64)
   Extra arguments after the preset are passed through to the underlying tool,
-  e.g. ./scripts/dev.ps1 test debug -R Smoke
+  e.g. ./scripts/dev.ps1 test debug --repeat until-fail:20 -R VaultWatcher
 #>
-[CmdletBinding()]
-param(
-    [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet('configure', 'build', 'test', 'all', 'clean', 'shell', 'format', 'format-check')]
-    [string]$Command,
-
-    [Parameter(Position = 1)]
-    [string]$Preset = 'debug',
-
-    [Parameter(ValueFromRemainingArguments = $true)]
-    [string[]]$Rest
-)
+# No param() block on purpose: with declared parameters PowerShell binds "--repeat" / "-C" /
+# "-R" as (abbreviated) parameter names and fails or steals them. Everything is read from
+# $args, which keeps every token verbatim, so anything after <preset> reaches the tool.
+$validCommands = @('configure', 'build', 'test', 'all', 'clean', 'shell', 'format', 'format-check')
+if ($args.Count -eq 0 -or $args[0] -notin $validCommands) {
+    throw "Usage: dev.ps1 <$($validCommands -join '|')> [preset] [extra tool arguments...]"
+}
+$Command = [string]$args[0]
+$Preset = 'debug'
+$Rest = @()
+if ($args.Count -gt 1) {
+    # The preset is the second token unless it looks like an option (then it is forwarded).
+    if (([string]$args[1]).StartsWith('-')) { $Rest = @($args[1..($args.Count - 1)]) }
+    else {
+        $Preset = [string]$args[1]
+        if ($args.Count -gt 2) { $Rest = @($args[2..($args.Count - 1)]) }
+    }
+}
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot

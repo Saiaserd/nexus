@@ -17,6 +17,15 @@
 ./scripts/dev.ps1 shell             # 顯示解析到的工具路徑
 ```
 
+`configure`、`build`、`test` 的 preset 之後的所有參數（包含 `--` 開頭的）都會原樣轉給 cmake / ctest（`all` 不轉發）：
+
+```powershell
+./scripts/dev.ps1 test debug --repeat until-fail:20 -R VaultWatcher
+./scripts/dev.ps1 test debug -C Debug --output-on-failure
+./scripts/dev.ps1 build debug --target nexus_core_tests -j 8
+./scripts/dev.ps1 configure debug -DCMAKE_VERBOSE_MAKEFILE=ON
+```
+
 若 PowerShell 擋下腳本（執行原則），改用：
 `powershell -ExecutionPolicy Bypass -File scripts/dev.ps1 build debug`
 
