@@ -135,30 +135,30 @@ jobs:
           ${CXX:-c++} --version || true
 
       - name: Debug - configure
-        run: .github/scripts/run-logged.sh "debug configure" cmake --preset debug
+        run: bash .github/scripts/run-logged.sh "debug configure" cmake --preset debug
       - name: Debug - build
-        run: .github/scripts/run-logged.sh "debug build" cmake --build --preset debug
+        run: bash .github/scripts/run-logged.sh "debug build" cmake --build --preset debug
       - name: Debug - test
-        run: .github/scripts/run-logged.sh "debug test" ctest --preset debug
+        run: bash .github/scripts/run-logged.sh "debug test" ctest --preset debug
 
       - name: ASan - configure
-        run: .github/scripts/run-logged.sh "asan configure" cmake --preset asan
+        run: bash .github/scripts/run-logged.sh "asan configure" cmake --preset asan
       - name: ASan - build
-        run: .github/scripts/run-logged.sh "asan build" cmake --build --preset asan
+        run: bash .github/scripts/run-logged.sh "asan build" cmake --build --preset asan
       - name: ASan - test
         env:
           ASAN_OPTIONS: detect_leaks=1:strict_string_checks=1
-        run: .github/scripts/run-logged.sh "asan test" ctest --preset asan
+        run: bash .github/scripts/run-logged.sh "asan test" ctest --preset asan
 
       - name: clang-tidy - configure
         if: matrix.tidy
-        run: .github/scripts/run-logged.sh "tidy configure" cmake --preset tidy
+        run: bash .github/scripts/run-logged.sh "tidy configure" cmake --preset tidy
       - name: clang-tidy - build (zero warnings)
         if: matrix.tidy
-        run: .github/scripts/run-logged.sh "tidy build" cmake --build --preset tidy
+        run: bash .github/scripts/run-logged.sh "tidy build" cmake --build --preset tidy
       - name: clang-tidy - test
         if: matrix.tidy
-        run: .github/scripts/run-logged.sh "tidy test" ctest --preset tidy
+        run: bash .github/scripts/run-logged.sh "tidy test" ctest --preset tidy
 
       - name: Save vcpkg binary cache
         if: always() && steps.vcpkg-cache.outputs.cache-hit != 'true'

@@ -13,9 +13,9 @@ if [ "$rc" -ne 0 ]; then
   key="$(grep -E 'error|Error|FAILED|Failed|\*\*\*|Sanitizer|SUMMARY|CMake Error|not found' "$log" | tail -n 25 | cut -c1-300)"
   [ -z "$key" ] && key="$(tail -n 25 "$log" | cut -c1-300)"
   # vcpkg build logs (configure step builds the dependencies).
-  if [ -n "${VCPKG_ROOT:-}" ]; then
+  if [ -n "${VCPKG_ROOT:-}" ] && [[ "$title" == *configure* ]]; then
     for f in "$VCPKG_ROOT"/buildtrees/*/*-err.log; do
-      [ -f "$f" ] && key="$key"$'\n'"[vcpkg] $f"$'\n'"$(tail -n 15 "$f" | cut -c1-300)"
+      [ -s "$f" ] && key="$key"$'\n'"[vcpkg] $f"$'\n'"$(tail -n 15 "$f" | cut -c1-300)"
     done
   fi
   msg="$(printf '%s' "$key" | head -c 3500 | tr -d '\r' | sed -e 's/%/%25/g' -e ':a;N;$!ba;s/\n/%0A/g')"
