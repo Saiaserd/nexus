@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>Nexus 歡迎畫面</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1E6B3A}a:hover{color:#14502A}
+</style>
+</helmet>
+<div style="height: 900px; display: flex; flex-direction: column; background: #F6F8F4; color: #1C271E; font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; font-size: 13px; overflow: hidden">
+
+<header style="height: 32px; flex-shrink: 0; display: flex; align-items: center; background: #E8EEE4">
+<div style="flex: 1; display: flex; align-items: center; gap: 10px; padding-left: 12px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E6B3A" stroke-width="2" aria-hidden="true"><circle cx="6" cy="7" r="3"></circle><circle cx="18" cy="6" r="2.5"></circle><circle cx="12" cy="18" r="3.5"></circle><path d="M8.5 8.8 10.5 15M15.8 7.3 13.4 14.8M9 7h6.5"></path></svg>
+<span style="font-size: 12px; color: #56665A">Nexus</span>
+</div>
+<div style="display: flex; height: 100%">
+<button aria-label="最小化" style="width: 46px; height: 100%; border: 0; background: transparent; color: #1C271E"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" aria-hidden="true"><path d="M0 5h10"></path></svg></button>
+<button aria-label="最大化" style="width: 46px; height: 100%; border: 0; background: transparent; color: #1C271E"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" aria-hidden="true"><rect x="0.5" y="0.5" width="9" height="9"></rect></svg></button>
+<button aria-label="關閉" style="width: 46px; height: 100%; border: 0; background: transparent; color: #1C271E"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" aria-hidden="true"><path d="m0.5 0.5 9 9m0-9-9 9"></path></svg></button>
+</div>
+</header>
+
+<nav aria-label="選單列" style="height: 30px; flex-shrink: 0; display: flex; align-items: center; gap: 2px; padding: 0 6px; background: #E8EEE4; border-bottom: 1px solid #D3DDCE">
+<button style="height: 24px; padding: 0 10px; border: 0; border-radius: 4px; background: transparent; font: inherit; color: #1C271E">檔案</button>
+<button style="height: 24px; padding: 0 10px; border: 0; border-radius: 4px; background: transparent; font: inherit; color: #1C271E">編輯</button>
+<button style="height: 24px; padding: 0 10px; border: 0; border-radius: 4px; background: transparent; font: inherit; color: #1C271E">檢視</button>
+<button style="height: 24px; padding: 0 10px; border: 0; border-radius: 4px; background: transparent; font: inherit; color: #1C271E">說明</button>
+</nav>
+
+<main style="flex: 1; min-height: 0; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 32px 16px">
+<div style="width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 32px">
+
+<div style="display: flex; align-items: center; gap: 16px">
+<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#1E6B3A" stroke-width="1.6" aria-hidden="true"><circle cx="6" cy="7" r="3"></circle><circle cx="18" cy="6" r="2.5"></circle><circle cx="12" cy="18" r="3.5"></circle><path d="M8.5 8.8 10.5 15M15.8 7.3 13.4 14.8M9 7h6.5"></path></svg>
+<div>
+<h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 0.3px">Nexus</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #56665A">用連結的筆記描述意圖，讓 AI 去寫程式。</p>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+<button style="display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 18px 18px 16px; border: 1px solid #1E6B3A; border-radius: 10px; background: #1E6B3A; color: #FFFFFF; font: inherit; text-align: left">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"></path></svg>
+<span style="font-size: 15px; font-weight: 700">開啟資料夾作為 vault</span>
+<span style="font-size: 12px; color: #D5EBDB">選擇已有 Markdown 筆記的資料夾　Ctrl+O</span>
+</button>
+<button style="display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 18px 18px 16px; border: 1px solid #D3DDCE; border-radius: 10px; background: #FFFFFF; color: #1C271E; font: inherit; text-align: left">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1E6B3A" stroke-width="1.8" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"></path><path d="M12 10.5v5M9.5 13h5"></path></svg>
+<span style="font-size: 15px; font-weight: 700">建立新的 vault</span>
+<span style="font-size: 12px; color: #56665A">在空資料夾建立，附一篇說明筆記</span>
+</button>
+</div>
+
+<section aria-label="最近開啟">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px 8px">
+<h2 style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #56665A">最近開啟</h2>
+<button style="border: 0; background: transparent; font: inherit; font-size: 12px; color: #1E6B3A">清除清單</button>
+</div>
+<div style="display: flex; flex-direction: column; border: 1px solid #D3DDCE; border-radius: 10px; background: #FFFFFF; overflow: hidden">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 14px; padding: 12px 16px; color: #1C271E; text-decoration: none">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E6B3A" stroke-width="1.8" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"></path></svg>
+<span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 500">nexus-規格</span><span style="display: block; margin-top: 2px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #56665A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">C:\Users\User\Documents\nexus-規格</span></span>
+<span style="font-size: 12px; color: #56665A">今天</span>
+</a>
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-top: 1px solid #E4EBE0; color: #1C271E; text-decoration: none">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E6B3A" stroke-width="1.8" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"></path></svg>
+<span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 500">todo-app</span><span style="display: block; margin-top: 2px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #56665A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">D:\projects\todo-app\notes</span></span>
+<span style="font-size: 12px; color: #56665A">3 天前</span>
+</a>
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-top: 1px solid #E4EBE0; color: #56665A">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B03A0B" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.5"></path></svg>
+<span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 500; color: #1C271E">舊筆記</span><span style="display: block; margin-top: 2px; font-size: 12px; color: #9A3412">找不到資料夾：E:\backup\舊筆記</span></span>
+<button style="height: 28px; padding: 0 10px; border: 1px solid #D3DDCE; border-radius: 6px; background: #FFFFFF; font: inherit; font-size: 12px; color: #1C271E">從清單移除</button>
+</div>
+</div>
+</section>
+
+<p style="margin: 0; text-align: center; font-size: 12px; color: #56665A">Nexus 0.1.0　·　<a href="#help">快速入門</a>　·　<a href="#settings">外觀設定</a></p>
+</div>
+</main>
+
+<footer style="height: 26px; flex-shrink: 0; display: flex; align-items: center; padding: 0 12px; background: #E8EEE4; border-top: 1px solid #D3DDCE; font-size: 12px; color: #56665A">
+<span>尚未開啟 vault</span>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

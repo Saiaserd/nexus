@@ -26,6 +26,7 @@
 | 開發 A | Sonnet 5.5 | `src/core/`、`src/parser/`、`src/storage/` | 一開始（M0、M1 由 A 獨自完成） |
 | 開發 B | Sonnet 5.5 | `src/ui/` | M2 開始 |
 | 開發 C | Sonnet 5.5 | `src/ai/`、CMake、CI、建置腳本 | M2 開始 |
+| 開發 D | Sonnet 5.5 | `src/ui/`（2026-10-25 起 UI 專責；B 暫時支援 parser／storage） | M1 UI 開始 |
 
 **M0、M1 只開 PM + 開發 A。**（2026-10-25 PM 修訂：M0 骨架完成、核心介面穩定後，提早開 B、C 平行處理 M1 的獨立模組與 CI，見 TASKS.md。） 骨架與基礎層前後依賴重，平行開發只會衝突。M1 完成、核心介面穩定後，才開 B 和 C。
 

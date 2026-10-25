@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>Nexus 檔案操作狀態</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; padding: 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 32px; background: #E4EAE1; color: #1C271E; font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; font-size: 13px">
+
+<section aria-label="右鍵選單" style="display: flex; flex-direction: column; gap: 12px; min-height: 0">
+<h2 style="margin: 0; font-size: 14px; font-weight: 700">1　檔案樹右鍵選單</h2>
+<div style="flex: 1; min-height: 0; position: relative; border: 1px solid #D3DDCE; border-radius: 10px; background: #EDF2EA; overflow: hidden">
+<div style="width: 260px; padding: 8px 6px">
+<div style="display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; font-weight: 500"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#56665A" stroke-width="1.5" aria-hidden="true"><path d="m3 4.5 3 3 3-3"></path></svg>specs</div>
+<div style="display: flex; align-items: center; height: 28px; padding: 0 8px 0 28px">vault-管理</div>
+<div style="display: flex; align-items: center; height: 28px; padding: 0 8px 0 28px; border-radius: 5px; box-shadow: inset 0 0 0 1.5px #1E6B3A; background: #E2EBDE">檔案監看</div>
+<div style="display: flex; align-items: center; height: 28px; padding: 0 8px 0 28px">筆記模型</div>
+</div>
+<div role="menu" aria-label="檔案監看 的操作" style="position: absolute; left: 150px; top: 100px; width: 240px; padding: 5px; background: #FFFFFF; border: 1px solid #D3DDCE; border-radius: 8px; box-shadow: 0 10px 30px rgba(28,39,30,0.18)">
+<button role="menuitem" style="width: 100%; height: 30px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border: 0; border-radius: 5px; background: #DCEBDD; color: #17552E; font: inherit; text-align: left"><span style="flex: 1">在新分頁開啟</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #56665A">Ctrl+Enter</span></button>
+<button role="menuitem" style="width: 100%; height: 30px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border: 0; border-radius: 5px; background: transparent; font: inherit; color: #1C271E; text-align: left"><span style="flex: 1">在同一資料夾新增筆記</span></button>
+<div role="separator" style="height: 1px; margin: 4px 6px; background: #E4EBE0"></div>
+<button role="menuitem" style="width: 100%; height: 30px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border: 0; border-radius: 5px; background: transparent; font: inherit; color: #1C271E; text-align: left"><span style="flex: 1">重新命名</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #56665A">F2</span></button>
+<button role="menuitem" style="width: 100%; height: 30px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border: 0; border-radius: 5px; background: transparent; font: inherit; color: #1C271E; text-align: left"><span style="flex: 1">複製相對路徑</span></button>
+<button role="menuitem" style="width: 100%; height: 30px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border: 0; border-radius: 5px; background: transparent; font: inherit; color: #1C271E; text-align: left"><span style="flex: 1">在檔案總管中顯示</span></button>
+<div role="separator" style="height: 1px; margin: 4px 6px; background: #E4EBE0"></div>
+<button role="menuitem" style="width: 100%; height: 30px; display: flex; align-items: center; gap: 10px; padding: 0 10px; border: 0; border-radius: 5px; background: transparent; font: inherit; color: #9A3412; text-align: left"><span style="flex: 1">刪除</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #56665A">Delete</span></button>
+</div>
+</div>
+</section>
+
+<section aria-label="重新命名" style="display: flex; flex-direction: column; gap: 12px; min-height: 0">
+<h2 style="margin: 0; font-size: 14px; font-weight: 700">2　原地重新命名（F2）</h2>
+<div style="flex: 1; min-height: 0; display: flex; gap: 20px; padding: 16px; border: 1px solid #D3DDCE; border-radius: 10px; background: #EDF2EA">
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; font-weight: 700; color: #56665A">輸入中</div>
+<div style="display: flex; align-items: center; height: 28px; padding: 0 8px 0 28px">vault-管理</div>
+<label style="display: flex; align-items: center; height: 28px; padding: 0 4px 0 24px">
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">新名稱</span>
+<input value="檔案監看器" style="flex: 1; min-width: 0; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1.5px solid #1E6B3A; border-radius: 4px; background: #FFFFFF; font: inherit; color: #1C271E; outline: none">
+</label>
+<div style="display: flex; align-items: center; height: 28px; padding: 0 8px 0 28px">筆記模型</div>
+<p style="margin: 6px 0 0; font-size: 12px; color: #56665A; line-height: 1.6">Enter 確認、Esc 取消。副檔名 .md 自動保留，不顯示在輸入框。</p>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; font-weight: 700; color: #56665A">名稱衝突</div>
+<div style="display: flex; align-items: center; height: 28px; padding: 0 8px 0 28px">vault-管理</div>
+<label style="display: flex; align-items: center; height: 28px; padding: 0 4px 0 24px">
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">新名稱</span>
+<input value="筆記模型" aria-invalid="true" aria-describedby="rename-err" style="flex: 1; min-width: 0; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1.5px solid #B03A0B; border-radius: 4px; background: #FFFFFF; font: inherit; color: #1C271E; outline: none">
+</label>
+<div id="rename-err" role="alert" style="margin-left: 24px; padding: 6px 8px; border-radius: 4px; background: #FBE9E1; color: #9A3412; font-size: 12px; line-height: 1.5">此資料夾已有「筆記模型」</div>
+<p style="margin: 6px 0 0; font-size: 12px; color: #56665A; line-height: 1.6">不合法字元（\ / : * ? " &lt; &gt; |）也用同一個提示方式。</p>
+</div>
+</div>
+</section>
+
+<section aria-label="刪除確認" style="display: flex; flex-direction: column; gap: 12px; min-height: 0">
+<h2 style="margin: 0; font-size: 14px; font-weight: 700">3　刪除確認</h2>
+<div style="flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #D3DDCE; border-radius: 10px; background: #C9D1C5">
+<div role="dialog" aria-labelledby="del-title" aria-describedby="del-desc" style="width: 420px; padding: 22px 22px 18px; background: #F6F8F4; border: 1px solid #D3DDCE; border-radius: 12px; box-shadow: 0 20px 60px rgba(28,39,30,0.25)">
+<h3 id="del-title" style="margin: 0; font-size: 16px; font-weight: 700">刪除「檔案監看」？</h3>
+<p id="del-desc" style="margin: 10px 0 0; line-height: 1.7; color: #3C4A3F">筆記會移到系統的資源回收筒，可以從那裡還原。這篇筆記有未儲存的變更，也會一起捨棄。</p>
+<label style="display: flex; align-items: center; gap: 8px; margin-top: 14px; color: #56665A"><input type="checkbox" style="width: 16px; height: 16px; accent-color: #1E6B3A">不要再詢問</label>
+<div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px">
+<button style="height: 32px; padding: 0 16px; border: 1px solid #D3DDCE; border-radius: 6px; background: #FFFFFF; font: inherit; color: #1C271E">取消</button>
+<button style="height: 32px; padding: 0 16px; border: 1px solid #9A3412; border-radius: 6px; background: #9A3412; font: inherit; font-weight: 500; color: #FFFFFF">移到資源回收筒</button>
+</div>
+</div>
+</div>
+</section>
+
+<section aria-label="外部修改" style="display: flex; flex-direction: column; gap: 12px; min-height: 0">
+<h2 style="margin: 0; font-size: 14px; font-weight: 700">4　外部修改（檔案監看）</h2>
+<div style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px">
+
+<div style="border: 1px solid #D3DDCE; border-radius: 10px; background: #FBFCFA; overflow: hidden">
+<div style="padding: 8px 14px; font-size: 12px; font-weight: 700; color: #56665A; background: #EDF2EA; border-bottom: 1px solid #D3DDCE">沒有未儲存變更：自動重新載入，狀態列短暫提示</div>
+<div style="display: flex; align-items: center; gap: 18px; height: 30px; padding: 0 12px; background: #E8EEE4; font-size: 12px; color: #56665A">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 7px; height: 7px; border-radius: 50%; background: #2E7D47"></span>監看中</span>
+<span style="display: flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 10px; background: #DCEBDD; color: #17552E"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"></path></svg>「vault-管理」已在外部更新，已重新載入</span>
+<span style="flex: 1"></span>
+<span>已儲存</span>
+</div>
+</div>
+
+<div style="border: 1px solid #D3DDCE; border-radius: 10px; background: #FBFCFA; overflow: hidden">
+<div style="padding: 8px 14px; font-size: 12px; font-weight: 700; color: #56665A; background: #EDF2EA; border-bottom: 1px solid #D3DDCE">有未儲存變更：編輯器上方出現衝突列，不自動覆蓋</div>
+<div role="alert" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 14px; background: #FDF3DC; border-bottom: 1px solid #EBD9A8">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A5607" stroke-width="2" aria-hidden="true"><path d="M12 3 2 20h20z"></path><path d="M12 10v4.5M12 17.2v.3"></path></svg>
+<span style="flex: 1 1 240px; color: #5C4105; line-height: 1.5">「檔案監看」已在外部修改，而你有未儲存的變更。</span>
+<button style="height: 28px; padding: 0 12px; border: 1px solid #C9B07A; border-radius: 6px; background: #FFFFFF; font: inherit; font-size: 12px; color: #1C271E">比較差異</button>
+<button style="height: 28px; padding: 0 12px; border: 1px solid #C9B07A; border-radius: 6px; background: #FFFFFF; font: inherit; font-size: 12px; color: #1C271E">載入外部版本</button>
+<button style="height: 28px; padding: 0 12px; border: 1px solid #1E6B3A; border-radius: 6px; background: #1E6B3A; font: inherit; font-size: 12px; font-weight: 500; color: #FFFFFF">保留我的版本</button>
+</div>
+<div style="padding: 10px 20px 12px 76px; font-size: 15px; line-height: 28px; color: #1C271E"><span style="color: #66766A">#</span> 檔案監看</div>
+</div>
+
+<div style="border: 1px solid #D3DDCE; border-radius: 10px; background: #FBFCFA; overflow: hidden">
+<div style="padding: 8px 14px; font-size: 12px; font-weight: 700; color: #56665A; background: #EDF2EA; border-bottom: 1px solid #D3DDCE">檔案在外部被刪除：分頁保留內容，標示為已刪除</div>
+<div style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; background: #EDF2EA">
+<span style="height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #FBFCFA; border: 1px solid #D3DDCE; border-bottom: 0; border-top: 2px solid #9A3412; border-radius: 6px 6px 0 0; color: #9A3412; text-decoration: line-through">筆記模型</span>
+<span style="font-size: 12px; color: #56665A">已從磁碟刪除　·　Ctrl+S 可重新存回</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

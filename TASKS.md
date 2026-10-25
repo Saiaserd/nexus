@@ -193,8 +193,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 > 2026-10-25 PM 決定提早平行開發：**A** 做 T-101、T-102、T-103（src/core），**B** 做 T-104（src/parser），**C** 做 M0 的 T-005（CI）。UI 卡等設計稿確認後再分配。
 > 共用檔案 `tests/CMakeLists.txt`、根目錄 `CMakeLists.txt` 只能各自加入自己的那幾行，衝突由 PM 在合併時處理。
 > 開工前必讀：ADR 0004（核心層路徑與檔案 I/O）。
-> 順序：T-101 → T-102 → T-104 → T-103 →（設計稿確認後）T-110 → T-111 → T-112 → T-113 → T-114。
-> UI 卡依 CLAUDE.md 規定，要等作者確認設計稿（待決事項 D-01）才能開工。設計稿：https://claude.ai/artifact/TvyTEzBXdyibRPPXrfGSiH
+> 順序：核心 T-101 → T-102 → T-103（A）；UI T-110 → T-111 → T-112 → T-113 → T-114（D）。設計稿已於 2026-10-25 經作者確認。
 
 ### T-101 Vault 開啟與掃描（核心）
 - **負責**：A
@@ -292,13 +291,94 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ---
 
-### T-110～T-114 UI（阻塞：等設計稿確認，見待決事項 D-01）
-- **T-110 主題系統**：依設計稿兩套色票，建立 `src/ui/Theme`（QPalette + QSS）；選單「檢視 › 主題」可切換淺色／深色／跟隨系統，用 `QSettings` 記住
-- **T-111 歡迎畫面與開啟 vault**：歡迎畫面、最近開啟清單（找不到的資料夾要標示）、開啟／建立 vault；`Vault::open` 用 `QtConcurrent` 在背景執行
-- **T-112 檔案樹**：`QAbstractItemModel` 包裝 Vault、不顯示 `.md`、右鍵選單、F2 原地改名（用 `validateName` 即時提示）、刪除確認對話框
-- **T-113 編輯器與分頁**：`QPlainTextEdit` + 行號 + 目前行底色 + 用 T-104 上色；分頁（未儲存圓點）、Ctrl+S、麵包屑、狀態列（行／欄、字數、換行種類）
-- **T-114 外部修改處理**：接上 VaultWatcher；沒有未儲存變更就自動重新載入並在狀態列提示；有未儲存變更就顯示衝突列；檔案被刪除時，分頁顯示刪除線
-- 詳細檔案清單與完成標準：設計稿確認後再補
+### UI 共通說明（T-110～T-114）
+- **負責**：開發 D（UI 專責，worktree `nexus-dev-d`）
+- 設計稿（作者已確認，2026-10-25）：https://claude.ai/artifact/TvyTEzBXdyibRPPXrfGSiH
+  - `Main.dc.html`：主畫面，底部的 `renderVals()` 有完整的淺色／深色色票
+  - `Welcome.dc.html`：歡迎畫面；`States.dc.html`：檔案操作狀態
+  - 讀取方式：PM 已把四張設計稿的 HTML 存進 repo 的 `docs/design/m1/`，請直接讀這些檔案
+- 技術基礎見 ADR 0006（Fusion + QSS、色票集中、系統原生標題列、系統字型、自動儲存）
+- 測試：新增 `nexus_ui_tests`，用 `QT_QPA_PLATFORM=offscreen` 跑 Widgets 測試；邏輯（model、格式化、狀態機）一定要有單元測試，純視覺的部分則用截圖人工比對
+- 每張卡完成時，要在 PR 摘要附上**淺色與深色的實際截圖**（存到 `docs/screenshots/T-xxx-*.png`），PM 會拿來和設計稿逐一比對
+
+### T-110 主題系統
+- **負責**：D
+- **狀態**：待辦
+- **依賴**：M0
+- **檔案**：`src/ui/Theme.h/.cpp`（`Palette` 結構：bg、chrome、panel、surface、border、borderSoft、text、muted、accent、accentSoft、accentText、marker、gutter、gutterActive、lineActive、link、tag、tagBg、codeBg、kw、ok、danger、warnBg、warnText…）、`src/ui/ThemeManager.h/.cpp`（淺色／深色／跟隨系統、QSettings、`setColorScheme`、發出 `themeChanged` signal）、`src/ui/style/app.qss.in` 或用程式產生 QSS、`src/ui/resources.qrc`（JetBrains Mono、SVG 圖示）、修改 `MainWindow`（加入「檢視 › 主題」選單）、`tests/ui/ThemeTest.cpp`
+- **完成標準**：
+  - 兩套色票與設計稿完全相同（測試逐一比對數值）
+  - 自動檢查對比：text、muted 對 bg、panel、surface 的對比度都要 ≥ 4.5:1，兩套主題都要測
+  - 切換主題時立即生效、不必重啟；原生標題列跟著變深色或淺色（Windows 11 手動驗證並附截圖）
+  - 跟隨系統時，系統切換深淺色，Nexus 跟著切換
+  - 主視窗的選單列、狀態列套用色票
+- **備註**：
+
+### T-111 主視窗框架、歡迎畫面、開啟 vault
+- **負責**：D
+- **狀態**：待辦
+- **依賴**：T-110、T-101
+- **檔案**：`src/ui/MainWindow`（左邊檔案樹、右邊工作區的 QSplitter，工作區用 QStackedWidget 切換歡迎畫面和編輯區）、`src/ui/WelcomePage.h/.cpp`、`src/ui/RecentVaults.h/.cpp`（QSettings，最多 10 筆）、`src/ui/VaultSession.h/.cpp`（持有目前開啟的 Vault，用 QtConcurrent 開啟）、`tests/ui/RecentVaultsTest.cpp`
+- **完成標準**：
+  - 歡迎畫面照 `Welcome.dc.html`：開啟資料夾（Ctrl+O）、建立新 vault、最近開啟清單（找不到的資料夾要標紅並提供「從清單移除」；檢查是否存在要在背景執行，避免網路磁碟卡住）、清除清單
+  - 建立新 vault：選一個空資料夾，在裡面建立一篇「歡迎.md」說明筆記，然後開啟
+  - 啟動時自動開啟上次的 vault；不存在就顯示歡迎畫面
+  - 開啟 vault 期間顯示載入狀態，UI 不能卡住
+  - 選單：
+    - 檔案：開啟 vault…、建立新 vault…、最近開啟 ›、新增筆記（Ctrl+N）、儲存（Ctrl+S）、關閉分頁（Ctrl+W）、關閉 vault、結束
+    - 檢視：主題 ›、顯示檔案樹（Ctrl+B）、顯示行號
+    - 說明：關於 Nexus
+  - 視窗標題：「筆記名 — vault 名 — Nexus」；記住視窗位置與大小
+- **備註**：
+
+### T-112 檔案樹
+- **負責**：D
+- **狀態**：待辦
+- **依賴**：T-111、T-102
+- **檔案**：`src/ui/VaultTreeModel.h/.cpp`（QAbstractItemModel）、`src/ui/FileTreePanel.h/.cpp`（標頭列：vault 名稱，加上新增筆記、新增資料夾、全部收合三個按鈕）、`src/ui/RenameDelegate`、`src/ui/DeleteConfirmDialog`、`tests/ui/VaultTreeModelTest.cpp`
+- **完成標準**：
+  - 照 `Main.dc.html` 左欄與 `States.dc.html` 狀態 1～3
+  - 不顯示 `.md`；資料夾在前；用 core 的自然排序
+  - 選取時的底色與文字色、資料夾展開與收合箭頭、未儲存的圓點，都照設計稿
+  - 右鍵選單：在新分頁開啟、在同一資料夾新增筆記、重新命名（F2）、複製相對路徑、在檔案總管中顯示（Windows 用 `explorer /select,`；Linux 開啟所在資料夾）、刪除（Delete）
+  - F2 原地改名：用 `NoteFiles::validateName` 即時檢查，錯誤提示顯示在輸入框下方（設計稿狀態 2）；Enter 確認、Esc 取消
+  - 刪除確認對話框照設計稿狀態 3，有「不要再詢問」選項，記在 QSettings；實際刪除是移到資源回收筒
+  - 新增筆記後，自動進入改名狀態並開啟該筆記
+  - model 有完整測試，包含增刪改後的結構與排序；用 `QAbstractItemModelTester` 驗證
+- **備註**：
+
+### T-113 編輯器、分頁、狀態列
+- **負責**：D
+- **狀態**：待辦
+- **依賴**：T-110、T-102、T-104
+- **檔案**：`src/ui/NoteEditor.h/.cpp`（QPlainTextEdit，含行號區、目前行底色、內容最大寬度 820px 置中）、`src/ui/MarkdownHighlighter.h/.cpp`（QSyntaxHighlighter，用 `lexLine`，block state 存 `LexState::toInt()`）、`src/ui/EditorTabs`（分頁，未儲存時把關閉鈕換成圓點）、`src/ui/BreadcrumbBar`、`src/ui/StatusBarWidgets`、`src/ui/NoteSession`（每個分頁的文件狀態與自動儲存）、`tests/ui/MarkdownHighlighterTest.cpp`、`tests/ui/WordCountTest.cpp`
+- **完成標準**：
+  - 上色規則照 `Main.dc.html`：
+    - 標題 H1 24px、H2 19px、H3 17px 加粗，`#` 用 marker 色
+    - `[[ ]]` 用 marker 色、目標文字用 link 色加底線
+    - 標籤用 tag 色加 tagBg 底色（QSyntaxHighlighter 做不出圓角膠囊，用底色即可）
+    - 行內程式碼和程式碼區塊用 JetBrains Mono 加 codeBg；清單符號用 accent 加粗；引用用斜體 muted
+  - 內文 15px、行高 28px；行號用等寬字型、gutter 色，目前行號用 gutterActive 色
+  - 自動儲存（ADR 0006）：停止輸入 1 秒後、切換或關閉分頁、失去焦點、關閉程式時；Ctrl+S 立即存；讀寫都在 QtConcurrent
+  - 存檔保留原本的換行和 BOM（用 T-102 的 NoteDocument）
+  - 狀態列：監看中、N 篇筆記、已儲存／儲存中／未儲存、第 X 行，第 Y 欄、字數（中日韓字元每字算 1，英數單字算 1）、UTF-8 · LF/CRLF
+  - 麵包屑：vault 名 › 資料夾 › 檔名.md
+  - 效能：開啟 1 萬行的筆記 < 300ms；在 1 萬行筆記中打字，人工量測不能有明顯延遲（附量測方法和數字）
+  - 用 highlighter 測試確認各種 span 套到正確的格式
+- **備註**：
+
+### T-114 外部修改處理
+- **負責**：D
+- **狀態**：待辦
+- **依賴**：T-113、T-103
+- **檔案**：`src/ui/ExternalChangeBar`、修改 `NoteSession` 和 `MainWindow`（接上 VaultWatcher）、`tests/ui/NoteSessionTest.cpp`
+- **完成標準**（照 `States.dc.html` 狀態 4）：
+  - 沒有未儲存變更：自動重新載入，保留游標位置（盡量保留在同一行），狀態列短暫提示
+  - 有未儲存變更：編輯器上方出現衝突列，有三個選項：比較差異（M1 先用簡單的左右對照對話框即可）、載入外部版本、保留我的版本（立刻覆寫）
+  - 檔案在外部被刪除：分頁標示刪除線與「已從磁碟刪除」，Ctrl+S 可以存回去
+  - 外部新增或刪除檔案時，檔案樹即時更新
+  - NoteSession 的狀態轉換要有單元測試
+- **備註**：
 
 ---
 ---
