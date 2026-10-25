@@ -21,6 +21,7 @@ using nexus::ui::MainWindow;
 
 namespace {
 
+// NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
 class MainWindowTest : public ::testing::Test {
 protected:
     MainWindowTest()
@@ -62,6 +63,7 @@ protected:
     QSettings m_settings;
     nexus::ui::ThemeManager m_theme;
 };
+// NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
 
 } // namespace
 

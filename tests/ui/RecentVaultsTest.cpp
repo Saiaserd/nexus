@@ -12,6 +12,7 @@ using nexus::ui::RecentVaults;
 
 namespace {
 
+// NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
 class RecentVaultsTest : public ::testing::Test {
 protected:
     [[nodiscard]] QString iniPath() const { return m_dir.filePath(QStringLiteral("r.ini")); }
@@ -20,6 +21,7 @@ protected:
 private:
     QTemporaryDir m_dir;
 };
+// NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
 
 QStringList paths(const RecentVaults& recent)
 {

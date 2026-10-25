@@ -48,6 +48,7 @@ struct Recorder {
     std::optional<VaultOpenError> error;
 };
 
+// NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
 class VaultSessionTest : public ::testing::Test {
 protected:
     [[nodiscard]] QString path(const QString& rel) const { return m_dir.filePath(rel); }
@@ -61,6 +62,7 @@ protected:
 private:
     QTemporaryDir m_dir;
 };
+// NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
 
 } // namespace
 
@@ -92,8 +94,8 @@ TEST_F(VaultSessionTest, MissingFolderFails)
     ASSERT_TRUE(waitFor([&] { return rec.count(QStringLiteral("failed")) == 1; }));
     EXPECT_EQ(session.state(), VaultSession::State::Closed);
     ASSERT_TRUE(rec.error.has_value());
-    EXPECT_EQ(rec.error->file.kind, nexus::core::FileErrorKind::NotFound);
-    EXPECT_FALSE(rec.error->folderNotEmpty);
+    EXPECT_EQ(rec.error.value().file.kind, nexus::core::FileErrorKind::NotFound);
+    EXPECT_FALSE(rec.error.value().folderNotEmpty);
     EXPECT_EQ(session.files(), nullptr);
 }
 
@@ -130,7 +132,7 @@ TEST_F(VaultSessionTest, CreateRefusesAFolderWithContent)
     session.createAndOpen(path(QStringLiteral("v")));
     ASSERT_TRUE(waitFor([&] { return rec.count(QStringLiteral("failed")) == 1; }));
     ASSERT_TRUE(rec.error.has_value());
-    EXPECT_TRUE(rec.error->folderNotEmpty);
+    EXPECT_TRUE(rec.error.value().folderNotEmpty);
     EXPECT_FALSE(QFile::exists(path(QStringLiteral("v/歡迎.md")))) << "must not touch the folder";
 }
 
@@ -141,7 +143,7 @@ TEST_F(VaultSessionTest, CreateTreatsHiddenFilesAsContent)
     Recorder rec(session);
     session.createAndOpen(path(QStringLiteral("h")));
     ASSERT_TRUE(waitFor([&] { return rec.count(QStringLiteral("failed")) == 1; }));
-    EXPECT_TRUE(rec.error->folderNotEmpty);
+    EXPECT_TRUE(rec.error.value().folderNotEmpty);
 }
 
 TEST_F(VaultSessionTest, CreateInMissingFolderFails)
@@ -150,8 +152,8 @@ TEST_F(VaultSessionTest, CreateInMissingFolderFails)
     Recorder rec(session);
     session.createAndOpen(path(QStringLiteral("missing")));
     ASSERT_TRUE(waitFor([&] { return rec.count(QStringLiteral("failed")) == 1; }));
-    EXPECT_FALSE(rec.error->folderNotEmpty);
-    EXPECT_EQ(rec.error->file.kind, nexus::core::FileErrorKind::NotFound);
+    EXPECT_FALSE(rec.error.value().folderNotEmpty);
+    EXPECT_EQ(rec.error.value().file.kind, nexus::core::FileErrorKind::NotFound);
 }
 
 TEST_F(VaultSessionTest, CloseReleasesEverything)

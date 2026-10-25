@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSaveFile>
+#include <QThread>
 
 #include "core/PathOrder.h"
 
@@ -152,12 +153,22 @@ Expected<void, FileError> NoteFiles::write(const QString& rel, const NoteDocumen
         return unexpected(makeError(FileErrorKind::NotFound, rel));
     }
     const QByteArray bytes = doc.encode();
-    QSaveFile file(abs);
-    if (!file.open(QIODevice::WriteOnly)) {
-        return unexpected(deviceError(file, rel));
-    }
-    if (file.write(bytes) != bytes.size() || !file.commit()) {
-        return unexpected(deviceError(file, rel));
+    // On Windows another process (indexer, antivirus, a watcher reading the note) can hold the
+    // file for a moment and the atomic replace then fails with a sharing violation. Retry
+    // briefly, as other editors do; this always runs on a background thread.
+    constexpr int kAttempts = 5;
+    for (int attempt = 1;; ++attempt) {
+        QSaveFile file(abs);
+        if (!file.open(QIODevice::WriteOnly)) {
+            return unexpected(deviceError(file, rel));
+        }
+        if (file.write(bytes) == bytes.size() && file.commit()) {
+            break;
+        }
+        if (attempt == kAttempts) {
+            return unexpected(deviceError(file, rel));
+        }
+        QThread::msleep(10UL << attempt); // 20, 40, 80, 160 ms
     }
     if (m_listener) {
         const QFileInfo written(abs);

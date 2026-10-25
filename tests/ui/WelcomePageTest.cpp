@@ -24,6 +24,7 @@ using nexus::ui::WelcomePage;
 
 namespace {
 
+// NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
 class WelcomePageTest : public ::testing::Test {
 protected:
     WelcomePageTest()
@@ -50,6 +51,7 @@ protected:
     QSettings m_settings;
     ThemeManager m_theme;
 };
+// NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
 
 } // namespace
 

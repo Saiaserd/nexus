@@ -159,6 +159,7 @@ TEST(StyleSheet, TemplateHasNoHardCodedColours)
     EXPECT_FALSE(literal.match(templateText()).hasMatch());
 }
 
+// NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
 class ThemeManagerTest : public ::testing::Test {
 protected:
     [[nodiscard]] QString iniPath() const { return m_dir.filePath(QStringLiteral("t.ini")); }
@@ -166,6 +167,7 @@ protected:
 private:
     QTemporaryDir m_dir;
 };
+// NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
 
 TEST_F(ThemeManagerTest, DefaultsToLight)
 {
