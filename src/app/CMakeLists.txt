@@ -1,6 +1,6 @@
 add_executable(nexus main.cpp)
 
-target_link_libraries(nexus PRIVATE Qt6::Core Qt6::Widgets)
+target_link_libraries(nexus PRIVATE nexus_ui)
 
 nexus_set_warnings(nexus)
 nexus_enable_sanitizers(nexus)

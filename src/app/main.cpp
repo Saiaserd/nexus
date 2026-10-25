@@ -1,12 +1,14 @@
-#include <QCoreApplication>
-#include <QTimer>
+#include <QApplication>
+
+#include "ui/MainWindow.h"
 
 int main(int argc, char* argv[])
 {
-    QCoreApplication app(argc, argv);
-    QCoreApplication::setApplicationName(QStringLiteral("Nexus"));
+    const QApplication app(argc, argv);
+    QApplication::setApplicationName(QStringLiteral("Nexus"));
 
-    // No window yet (T-006). Enter the event loop once and leave immediately.
-    QTimer::singleShot(0, &app, &QCoreApplication::quit);
-    return QCoreApplication::exec();
+    nexus::ui::MainWindow window;
+    window.show();
+
+    return QApplication::exec();
 }

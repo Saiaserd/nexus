@@ -124,7 +124,7 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
 
 ### T-006 空白主視窗
 - **負責**：A
-- **狀態**：待辦
+- **狀態**：待審核
 - **依賴**：T-001
 - **目標**：啟動後顯示 Nexus 主視窗
 - **檔案**：
@@ -136,7 +136,12 @@ M0 全部由 **開發 A** 依序完成。建議順序：T-001 → T-002 → **T-
   - 有空的選單列（檔案、編輯、檢視、說明）與狀態列
   - 關閉視窗正常結束，asan 無錯誤或洩漏回報
   - 只做系統原生外觀的空殼；**不做任何主題或自訂樣式**（UI 設計稿確認前不得加，見 CLAUDE.md「UI」）
-- **備註**：
+- **備註**：（A）已完成。
+  - 新增 `src/ui/`（`MainWindow.h/.cpp`、`CMakeLists.txt`，靜態庫 `nexus_ui`，連結 Qt6::Widgets），`main.cpp` 改為 `QApplication` + `MainWindow`，`src/app` 連結 `nexus_ui`；根 CMakeLists 加入 `add_subdirectory(src/ui)`。
+  - `MainWindow`：標題「Nexus」、1280×800、選單列「檔案(&F)（內含「結束」，Ctrl+Q）／編輯／檢視／說明」皆為空選單、狀態列。純系統原生外觀，沒有任何樣式表或主題。選單與狀態列皆為視窗的子物件，無裸 new。
+  - 驗證：`./scripts/dev.ps1 all asan` exit 0（4 個測試過）。手動執行 asan 版 `nexus.exe`：視窗標題為「Nexus」，送出關閉訊息後 **exit code 0，stderr 為空（無 ASan 報告）**。windeployqt 已部署 Qt6Core/Gui/Widgets 等與平台外掛。
+  - 沒有把 GUI 放進 ctest（避免卡在視窗、Linux CI 需 offscreen 平台）；若日後要自動化啟動測試，建議另加 `--quit-after-show` 之類的參數，或以 QT_QPA_PLATFORM=offscreen 並在 windeployqt 加 `--plugindir` 部署 offscreen 外掛。
+  - Windows 的 MSVC ASan 沒有 LeakSanitizer，洩漏偵測只能靠 Linux CI（T-005）。Linux 尚未驗證。
 
 ---
 
