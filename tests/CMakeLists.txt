@@ -3,15 +3,25 @@ include(GoogleTest)
 
 # One test executable per module. Add new test sources to the matching list.
 add_executable(nexus_core_tests
-  core/SmokeTest.cpp)
+  core/SmokeTest.cpp
+  core/PathOrderTest.cpp
+  core/VaultTest.cpp
+  core/NoteFilesTest.cpp
+  core/VaultWatcherTest.cpp
+  core/TestMain.cpp)
 
-target_link_libraries(nexus_core_tests PRIVATE nexus_core GTest::gtest GTest::gtest_main)
+target_link_libraries(nexus_core_tests PRIVATE nexus_core Qt6::Core Qt6::Test GTest::gtest)
 
+nexus_deploy_qt(nexus_core_tests)
+# Timing assertions only make sense in optimized builds (debug / asan check correctness only).
+target_compile_definitions(nexus_core_tests PRIVATE $<$<CONFIG:Release>:NEXUS_ENFORCE_PERF>)
 nexus_set_warnings(nexus_core_tests)
 nexus_enable_sanitizers(nexus_core_tests)
 
 # Must come after the sanitizer step so the ASan runtime DLL is already beside the exe.
-gtest_discover_tests(nexus_core_tests)
+# Performance tests (suite names ending in Perf) get the `perf` label; they run by default.
+gtest_discover_tests(nexus_core_tests TEST_FILTER "-*Perf.*")
+gtest_discover_tests(nexus_core_tests TEST_FILTER "*Perf.*" PROPERTIES LABELS perf)
 
 # Parser tests (link Qt, so the Qt runtime has to be deployed beside the exe).
 add_executable(nexus_parser_tests
